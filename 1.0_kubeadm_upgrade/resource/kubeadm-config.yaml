@@ -5,7 +5,7 @@ metadata:
   name: 1.13-sample
 apiServer:
   extraArgs:
-    enable-admission-plugins: AlwaysPullImages,DefaultStorageClass
+    enable-admission-plugins: AlwaysPullImages,DefaultStorageClass,PodSecurityPolicy
     token-auth-file: /etc/kubernetes/auth/tokens.csv
   extraVolumes:
   - name: tokens
