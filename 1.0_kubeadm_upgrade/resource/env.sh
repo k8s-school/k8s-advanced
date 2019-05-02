@@ -1,6 +1,6 @@
-KUBEADM_VERSION=
+KUBEADM_VERSION="1.13.5-00"
 
-DOCKER_VERSION=18.06.1-0ubuntu1.2~18.04.1
+DOCKER_VERSION="18.06.1-0ubuntu1.2~18.04.1"
 
 # Get latest kubeadm version
 sudo apt-get update -q

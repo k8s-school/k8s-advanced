@@ -3,7 +3,7 @@
 set -e
 
 DIR=$(cd "$(dirname "$0")"; pwd -P)
-. ./env.sh
+. "$DIR/env.sh"
 
 apt-get update -q
 apt-get install -y apt-transport-https curl

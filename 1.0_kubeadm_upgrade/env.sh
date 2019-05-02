@@ -1,7 +1,7 @@
-MASTER="node-1"
-NODES="node-2 node-3"
+MASTER="cluster0-0"
+NODES="cluster0-1 cluster0-2"
 
-ZONE=europe-west1-b
+ZONE=europe-west1-c
 gcloud config set compute/zone $ZONE
 
 SCP="gcloud compute scp"
