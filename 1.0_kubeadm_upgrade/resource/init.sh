@@ -43,7 +43,7 @@ sudo mkdir -p /etc/kubeadm
 sudo cp -f $DIR/kubeadm-config*.yaml /etc/kubeadm
 
 if [ -n "$PSP" ]; then
-    echo "Enable PSP"
+    echo "-- Enable PSP --"
     KUBEADM_CONFIG="/etc/kubeadm/kubeadm-config-psp.yaml"
 else
     KUBEADM_CONFIG="/etc/kubeadm/kubeadm-config.yaml"

@@ -68,6 +68,3 @@ subjects:
 - apiGroup: rbac.authorization.k8s.io
   kind: Group
   name: system:serviceaccounts:kube-system
-- apiGroup: rbac.authorization.k8s.io
-  kind: Group
-  name: system:bootstrap
