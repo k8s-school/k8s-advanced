@@ -6,6 +6,8 @@ set -x
 DIR=$(cd "$(dirname "$0")"; pwd -P)
 . "$DIR/env.sh"
 
+sudo cp -f $DIR/kubeadm-config.yaml /etc/kubeadm
+
 # On whole control plane
 sudo apt-mark unhold kubeadm
 sudo apt-get install -y kubeadm="$LATEST_KUBEADM"
