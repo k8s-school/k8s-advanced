@@ -3,6 +3,7 @@
 set -e
 set -x
 
+# Run on kubeadm cluster
 # see "kubernetes in action" p375
 
 # In Kubia 13.3.1 does not work on GKE
@@ -74,6 +75,3 @@ kubectl-admin create rolebinding default:psp:unprivileged \
     --role=psp:unprivileged \
     --serviceaccount=psp-example:default
 kubectl-user get pods --watch
-
-# https://docs.bitnami.com/kubernetes/how-to/secure-kubernetes-cluster-psp/
-# might be interesting
