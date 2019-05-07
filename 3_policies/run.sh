@@ -34,7 +34,10 @@ then
     >&2 echo "ERROR this command should have failed"
 fi
 
-kubectl-user auth can-i use podsecuritypolicy/example
+if ! kubectl-user auth can-i use podsecuritypolicy/example
+then
+    >&2 echo "ERROR this command should have failed"
+fi
 
 kubectl-admin create role psp:unprivileged \
     --verb=use \
@@ -47,10 +50,7 @@ kubectl-admin create rolebinding fake-user:psp:unprivileged \
     --serviceaccount=psp-example:fake-user
 rolebinding "fake-user:psp:unprivileged" created
 
-if kubectl-user auth can-i use podsecuritypolicy/example
-then
-    >&2 echo "ERROR this command should have failed"
-fi
+kubectl-user auth can-i use podsecuritypolicy/example
 
 kubectl-user create -f /tmp/pause.yamls
 
