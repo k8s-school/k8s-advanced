@@ -9,7 +9,7 @@ set -x
 # Instead run:
 # https://kubernetes.io/docs/concepts/policy/pod-security-policy/#run-another-pod
 
-kubectl delete ns -l "policies=psp"
+kubectl delete ns,psp -l "policies=psp"
 
 kubectl create namespace psp-example
 kubectl label ns psp-example "policies=psp"
@@ -20,6 +20,7 @@ alias kubectl-admin='kubectl -n psp-example'
 alias kubectl-user='kubectl --as=system:serviceaccount:psp-example:fake-user -n psp-example'
 
 kubectl-admin apply -f https://raw.githubusercontent.com/kubernetes/website/master/content/en/examples/policy/example-psp.yaml
+kubectl label psp example "policies=psp"
 
 cat <<EOF > /tmp/pause.yaml
 apiVersion: v1
@@ -40,16 +41,14 @@ kubectl-admin create role psp:unprivileged \
     --verb=use \
     --resource=podsecuritypolicy \
     --resource-name=example
-role "psp:unprivileged" created
 
 kubectl-admin create rolebinding fake-user:psp:unprivileged \
     --role=psp:unprivileged \
     --serviceaccount=psp-example:fake-user
-rolebinding "fake-user:psp:unprivileged" created
 
 kubectl-user auth can-i use podsecuritypolicy/example
 
-kubectl-user create -f /tmp/pause.yamls
+kubectl-user create -f /tmp/pause.yaml
 
 cat <<EOF > /tmp/priv-pause.yaml
 apiVersion: v1
@@ -63,11 +62,8 @@ spec:
       securityContext:
         privileged: true
 EOF
-then
-    >&2 echo "ERROR this command should have failed"
-fi
 
-kubectl-user create -f /tmp/priv-pause.yaml
+kubectl-user create -f /tmp/priv-pause.yaml && >&2 echo "ERROR this command should have failed"
 
 kubectl-user delete pod pause
 
@@ -78,7 +74,6 @@ kubectl-admin create rolebinding default:psp:unprivileged \
     --role=psp:unprivileged \
     --serviceaccount=psp-example:default
 kubectl-user get pods --watch
-kubectl-admin delete ns psp-example
 
 # https://docs.bitnami.com/kubernetes/how-to/secure-kubernetes-cluster-psp/
 # might be interesting

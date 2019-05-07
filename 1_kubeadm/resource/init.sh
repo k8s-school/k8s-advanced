@@ -59,7 +59,7 @@ sudo chown $(id -u):$(id -g) $HOME/.kube/config
 
 # Apply psp
 if [ -n "$PSP" ]; then
-    kubectl apply -f /tmp/resource/psp
+    kubectl apply -f /tmp/resource/psp/privileged-psp-with-rbac.yaml
 fi
 
 # Enable auto-completion
