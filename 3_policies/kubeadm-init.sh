@@ -6,7 +6,7 @@ set -e
 
 DIR=$(cd "$(dirname "$0")"; pwd -P)
 
-WORKDIR="$DIR/../1.0_kubeadm_upgrade"
+WORKDIR="$DIR/../1_kubeadm"
 
 . "$WORKDIR/env.sh"
 

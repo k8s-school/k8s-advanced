@@ -22,7 +22,7 @@ spec:
   privileged: false
   readOnlyRootFilesystem: false
   runAsUser:
-    rule: 'MustRunAsNonRoot'
+    rule: 'RunAsAny'
   seLinux:
     rule: 'RunAsAny'
   supplementalGroups:
