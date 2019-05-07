@@ -29,7 +29,7 @@ spec:
       image: k8s.gcr.io/pause
 EOF
 
-if kubectl-user create -f /tmp/pause.yaml
+if ! kubectl-user create -f /tmp/pause.yaml
 then
     >&2 echo "ERROR this command should have failed"
 fi
