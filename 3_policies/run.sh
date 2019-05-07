@@ -18,7 +18,7 @@ alias kubectl-user='kubectl --as=system:serviceaccount:psp-example:fake-user -n 
 
 kubectl-admin apply -f https://raw.githubusercontent.com/kubernetes/website/master/content/en/examples/policy/example-psp.yaml
 
-if kubectl-user create -f- <<EOF
+cat <<EOF > /tmp/pause.yaml
 apiVersion: v1
 kind: Pod
 metadata:
@@ -28,6 +28,8 @@ spec:
     - name:  pause
       image: k8s.gcr.io/pause
 EOF
+
+if kubectl-user create -f /tmp/pause.yaml
 then
     >&2 echo "ERROR this command should have failed"
 fi
@@ -47,18 +49,9 @@ rolebinding "fake-user:psp:unprivileged" created
 
 kubectl-user auth can-i use podsecuritypolicy/example
 
-kubectl-user create -f- <<EOF
-apiVersion: v1
-kind: Pod
-metadata:
-  name:      pause
-spec:
-  containers:
-    - name:  pause
-      image: k8s.gcr.io/pause
-EOF
+kubectl-user create -f /tmp/pause.yamls
 
-if kubectl-user create -f- <<EOF
+cat <<EOF > /tmp/priv-pause.yaml
 apiVersion: v1
 kind: Pod
 metadata:
@@ -73,6 +66,8 @@ EOF
 then
     >&2 echo "ERROR this command should have failed"
 fi
+
+kubectl-user create -f /tmp/priv-pause.yaml
 
 kubectl-user delete pod pause
 
