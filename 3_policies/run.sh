@@ -3,13 +3,16 @@
 set -e
 set -x
 
-# RBAC sa
 # see "kubernetes in action" p375
 
 # In Kubia 13.3.1 does not work on GKE
 # Instead run:
 # https://kubernetes.io/docs/concepts/policy/pod-security-policy/#run-another-pod
+
+kubectl delete ns -l "policies=psp"
+
 kubectl create namespace psp-example
+kubectl label ns psp-example "policies=psp"
 kubectl create serviceaccount -n psp-example fake-user
 kubectl create rolebinding -n psp-example fake-editor --clusterrole=edit --serviceaccount=psp-example:fake-user
 
@@ -29,15 +32,9 @@ spec:
       image: k8s.gcr.io/pause
 EOF
 
-if ! kubectl-user create -f /tmp/pause.yaml
-then
-    >&2 echo "ERROR this command should have failed"
-fi
+kubectl-user create -f /tmp/pause.yaml && >&2 echo "ERROR this command should have failed"
 
-if ! kubectl-user auth can-i use podsecuritypolicy/example
-then
-    >&2 echo "ERROR this command should have failed"
-fi
+kubectl-user auth can-i use podsecuritypolicy/example && >&2 echo "ERROR this command should have failed"
 
 kubectl-admin create role psp:unprivileged \
     --verb=use \
