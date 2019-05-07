@@ -4,11 +4,9 @@ set -e
 set -x
 
 # Run on kubeadm cluster
-# see "kubernetes in action" p375
+# see "kubernetes in action" p390
 
-# In Kubia 13.3.1 does not work on GKE
-# Instead run:
-# https://kubernetes.io/docs/concepts/policy/pod-security-policy/#run-another-pod
+# See https://kubernetes.io/docs/concepts/policy/pod-security-policy/#run-another-pod
 
 kubectl delete ns,psp -l "policies=psp"
 
