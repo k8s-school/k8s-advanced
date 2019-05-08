@@ -10,4 +10,4 @@ apiServer:
     hostPath: /etc/kubernetes/auth
     mountPath: /etc/kubernetes/auth
 networking:
-  podSubnet: 192.168.0.0/16
+  podSubnet: 10.244.0.0/16

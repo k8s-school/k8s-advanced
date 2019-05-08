@@ -68,7 +68,8 @@ echo 'source <(kubectl completion bash)' >> ~/.bashrc
 # Install CNI plugin
 if [ -n "$POLICY" ]; then
     # Weave does not work well with network policies...
-    kubectl apply -f "https://docs.projectcalico.org/v3.7/manifests/calico.yaml"
+    # See https://docs.projectcalico.org/v3.7/getting-started/kubernetes/installation/flannel#installing-with-the-kubernetes-api-datastore-recommended
+    kubectl apply -f "https://docs.projectcalico.org/v3.7/manifests/canal.yaml"
 else
     kubectl apply -f "https://cloud.weave.works/k8s/net?k8s-version=$(kubectl version | base64 | tr -d '\n')"
 fi

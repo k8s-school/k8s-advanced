@@ -19,3 +19,16 @@ apt-get install -y docker.io="$DOCKER_VERSION" ipvsadm
 apt-get -y autoremove
 
 systemctl enable docker.service
+
+curl -O -L  https://github.com/projectcalico/calicoctl/releases/download/v3.7.2/calicoctl
+mv calicoctl /usr/local/bin
+chmod +x /usr/local/bin/calicoctl
+
+HELM_VERSION=2.13.1
+wget -O /tmp/helm.tgz \
+https://storage.googleapis.com/kubernetes-helm/helm-v${HELM_VERSION}-linux-amd64.tar.gz
+cd /tmp
+tar zxvf /tmp/helm.tgz
+chmod +x /tmp/linux-amd64/helm
+mv /tmp/linux-amd64/helm /usr/local/bin/helm-${HELM_VERSION}
+ln -sf /usr/local/bin/helm-${HELM_VERSION} /usr/local/bin/helm
