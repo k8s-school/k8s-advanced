@@ -5,11 +5,11 @@ metadata:
 spec:
   podSelector:
     matchLabels:
-      app: webserver
+      tier: webserver
   egress:
   - to:
     - podSelector:
         matchLabels:
-          app: database
+          tier: database
     ports:
     - port: 5432

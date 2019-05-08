@@ -67,7 +67,7 @@ echo 'source <(kubectl completion bash)' >> ~/.bashrc
 
 # Install CNI plugin
 if [ -n "$POLICY" ]; then
-    # Weave does not work well with network policies...
+    # Weave does not work well with network policies, Calico require BGP, so let's try Canal...
     # See https://docs.projectcalico.org/v3.7/getting-started/kubernetes/installation/flannel#installing-with-the-kubernetes-api-datastore-recommended
     kubectl apply -f "https://docs.projectcalico.org/v3.7/manifests/canal.yaml"
 else

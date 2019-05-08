@@ -22,7 +22,7 @@ helm init --service-account tiller --upgrade
 sleep 5
 helm repo update
 helm search postgresql
-kubectl apply -f $DIR/1_kubeadm/resource/psp/default-psp-with-rbac.yaml
+kubectl apply -f $DIR/../1_kubeadm/resource/psp/default-psp-with-rbac.yaml
 helm install --namespace network --name pgsql stable/postgresql --set master.podLabels.tier="database",persistence.enabled="false" --version 3.18.4
 
 # Install nginx pods
@@ -31,8 +31,6 @@ kubectl run -n network --generator=run-pod/v1 nginx --image=nginx -l "tier=webse
 
 sleep 5
 
-EXTERNAL_IP=$(kubectl get pods -n network external -o jsonpath='{.status.podIP}')
-PGSQL_IP=$(kubectl get pods -n network pgsql-postgresql-0 -o jsonpath='{.status.podIP}')
 # Install netcat, ping, netstat and ps in these pods
 kubectl exec -n network -it external -- \
     sh -c "apt-get update && apt-get install -y inetutils-ping netcat net-tools procps"
@@ -41,6 +39,8 @@ kubectl exec -n network -it nginx -- \
 sleep 10
 
 # then
+EXTERNAL_IP=$(kubectl get pods -n network external -o jsonpath='{.status.podIP}')
+PGSQL_IP=$(kubectl get pods -n network pgsql-postgresql-0 -o jsonpath='{.status.podIP}')
 kubectl exec -n network -it nginx -- netcat -zv ${PGSQL_IP} 5432
 kubectl exec -n network -it nginx -- netcat -zv pgsql-postgresql 5432
 kubectl exec -n network -it nginx -- netcat -nzv $EXTERNAL_IP 80
@@ -53,13 +53,19 @@ if [ ! -d "$KUBIA_DIR" ]; then
 fi
 
 cd "$KUBIA_DIR/Chapter13"
-# See https://kubernetes.io/docs/concepts/services-networking/network-policies/#default-policies
-kubectl apply -n network -f $DIR/resource/network-policy-default-deny.yaml
 # Edit original file, replace app with tier
 kubectl apply -n network -f $DIR/resource/network-policy-postgres.yaml
-# Test network connection from webserver to db
-kubectl exec -n network -it nginx -- netcat -zv pgsql-postgresql 5432
+# Edit original file, replace app with tier
 kubectl apply -n network -f $DIR/resource/network-policy-egress.yaml
+# Set default deny network policies
+# See https://kubernetes.io/docs/concepts/services-networking/network-policies/#default-policies
+kubectl apply -n network -f $DIR/resource/network-policy-default-deny.yaml
+
+# Play and test network connections after each step
+kubectl exec -n network -it nginx -- netcat -zv pgsql-postgresql 5432
+kubectl exec -n network -it nginx -- netcat -nzv $EXTERNAL_IP 80
+kubectl exec -n network -it external -- netcat -nzv pgsql-postgresql 5432
+kubectl exec -n network -it external -- netcat -zv www.w3.org 80
 
 
 kubectl apply -n network -f $KUBIA_DIR/Chapter13/network-policy-cart.yaml
