@@ -8,7 +8,7 @@ usage() {
     cat << EOD
 Usage: $(basename "$0") [options]
 Available options:
-  -p            Install PSP
+  -p            Install POLICY
   -h            This message
 
 Init k8s master
@@ -16,12 +16,12 @@ Init k8s master
 EOD
 }
 
-PSP=""
+POLICY=""
 
 # Get the options
 while getopts hp c ; do
     case $c in
-        p) PSP="enabled" ;;
+        p) POLICY="enabled" ;;
         h) usage ; exit 0 ;;
         \?) usage ; exit 2 ;;
     esac
@@ -42,9 +42,9 @@ sudo cp -f "$DIR/tokens.csv" $TOKEN_DIR
 sudo mkdir -p /etc/kubeadm
 sudo cp -f $DIR/kubeadm-config*.yaml /etc/kubeadm
 
-if [ -n "$PSP" ]; then
-    echo "-- Enable PSP --"
-    KUBEADM_CONFIG="/etc/kubeadm/kubeadm-config-psp.yaml"
+if [ -n "$POLICY" ]; then
+    echo "-- Enable POLICY --"
+    KUBEADM_CONFIG="/etc/kubeadm/kubeadm-config-policy.yaml"
 else
     KUBEADM_CONFIG="/etc/kubeadm/kubeadm-config.yaml"
 fi
@@ -57,16 +57,20 @@ mkdir -p $HOME/.kube
 sudo cp -f /etc/kubernetes/admin.conf $HOME/.kube/config
 sudo chown $(id -u):$(id -g) $HOME/.kube/config
 
-# Apply psp
-if [ -n "$PSP" ]; then
-    kubectl apply -f /tmp/resource/psp/privileged-psp-with-rbac.yaml
+# Apply POLICY
+if [ -n "$POLICY" ]; then
+    kubectl apply -f /tmp/resource/POLICY/privileged-POLICY-with-rbac.yaml
 fi
 
 # Enable auto-completion
 echo 'source <(kubectl completion bash)' >> ~/.bashrc
 
 # Install CNI plugin
-kubectl apply -f "https://cloud.weave.works/k8s/net?k8s-version=$(kubectl version | base64 | tr -d '\n')"
+if [ -n "$POLICY" ]; then
+    kubectl apply -f "https://docs.projectcalico.org/v3.7/manifests/calico.yaml"
+else
+    kubectl apply -f "https://cloud.weave.works/k8s/net?k8s-version=$(kubectl version | base64 | tr -d '\n')"
+fi
 
 # Update kubeconfig with users alice and bob
 USER=alice

@@ -56,6 +56,8 @@ kubectl apply -n network -f $DIR/resource/network-policy-default-deny.yaml
 kubectl apply -n network -f $DIR/resource/network-policy-postgres.yaml
 # Test network connection from webserver to db
 kubectl exec -n network -it nginx -- netcat -zv pgsql-postgresql 5432
-kubectl apply -n network -f network-policy-cart.yaml
-kubectl apply -n network -f network-policy-cidr.yaml
-kubectl apply -n network -f "$KUBIA_DIR/Chapter13/network-policy-egress.yaml"
+kubectl apply -n network -f $DIR/resource/network-policy-egress.yaml
+
+
+kubectl apply -n network -f $KUBIA_DIR/Chapter13/network-policy-cart.yaml
+kubectl apply -n network -f $KUBIA_DIR/Chapter13/network-policy-cidr.yaml

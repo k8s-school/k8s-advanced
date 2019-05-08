@@ -9,3 +9,5 @@ apiServer:
   - name: tokens
     hostPath: /etc/kubernetes/auth
     mountPath: /etc/kubernetes/auth
+networking:
+  podSubnet: 192.168.0.0/16
