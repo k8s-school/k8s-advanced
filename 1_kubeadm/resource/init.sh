@@ -57,9 +57,9 @@ mkdir -p $HOME/.kube
 sudo cp -f /etc/kubernetes/admin.conf $HOME/.kube/config
 sudo chown $(id -u):$(id -g) $HOME/.kube/config
 
-# Apply POLICY
+# Apply POLICY to enable kube-proxy and cni pods startup
 if [ -n "$POLICY" ]; then
-    kubectl apply -f /tmp/resource/POLICY/privileged-POLICY-with-rbac.yaml
+    kubectl apply -f /tmp/resource/POLICY/privileged-psp-with-rbac.yaml
 fi
 
 # Enable auto-completion
@@ -67,6 +67,7 @@ echo 'source <(kubectl completion bash)' >> ~/.bashrc
 
 # Install CNI plugin
 if [ -n "$POLICY" ]; then
+    # Weave does not work well with network policies...
     kubectl apply -f "https://docs.projectcalico.org/v3.7/manifests/calico.yaml"
 else
     kubectl apply -f "https://cloud.weave.works/k8s/net?k8s-version=$(kubectl version | base64 | tr -d '\n')"
