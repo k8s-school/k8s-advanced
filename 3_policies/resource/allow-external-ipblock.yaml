@@ -1,0 +1,13 @@
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-external-ipblock
+spec:
+  podSelector:
+    matchLabels:
+      app: external 
+  ingress:
+  - from:
+    - ipBlock:
+        cidr: 10.132.0.0/32
+# TODO: test flannel address of node: 10.244.1.0/32

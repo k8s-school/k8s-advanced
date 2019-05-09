@@ -49,12 +49,12 @@ do
 done
 
 kubectl expose -n network pod external --type=NodePort --port 80 --name=external
-
+NODE_PORT=$(kubectl get svc external -n network  -o jsonpath="{.spec.ports[0].nodePort}")
 # Install netcat, ping, netstat and ps in these pods
 kubectl exec -n network -it external -- \
-    sh -c "apt-get update && apt-get install -y inetutils-ping netcat net-tools procps"
+    sh -c "apt-get update && apt-get install -y inetutils-ping netcat net-tools procps tcpdump"
 kubectl exec -n network -it nginx -- \
-    sh -c "apt-get update && apt-get install -y inetutils-ping netcat net-tools procps"
+    sh -c "apt-get update && apt-get install -y inetutils-ping netcat net-tools procps tcpdump"
 sleep 10
 
 
@@ -82,11 +82,14 @@ kubectl apply -n network -f $DIR/resource/network-policy-egress.yaml
 kubectl apply -n network -f $DIR/resource/network-policy-default-deny.yaml
 
 # Play and test network connections after each step
-kubectl exec -n network -it nginx -- netcat -zv pgsql-postgresql 5432
-kubectl exec -n network -it nginx -- netcat -nzv $EXTERNAL_IP 80
-kubectl exec -n network -it external -- netcat -nzv pgsql-postgresql 5432
-kubectl exec -n network -it external -- netcat -zv www.w3.org 80
+kubectl exec -n network -it nginx -- netcat -q 2 -zv pgsql-postgresql 5432
+kubectl exec -n network -it nginx -- netcat -q 2 -nzv $EXTERNAL_IP 80
+kubectl exec -n network -it external -- netcat -q 2 -nzv pgsql-postgresql 5432
+kubectl exec -n network -it external -- netcat -q 2 -zv www.w3.org 80
 
 
 kubectl apply -n network -f $KUBIA_DIR/Chapter13/network-policy-cart.yaml
-kubectl apply -n network -f $KUBIA_DIR/Chapter13/network-policy-cidr.yaml
+
+# Exercice try to open NodePort with CIDR
+# - use tcpdump inside port to get source IP address
+kubectl apply -n network -f $DIR/resource/allow-external...
