@@ -13,5 +13,3 @@ spec:
           tier: database
     ports:
     - port: 5432
-  policyTypes:
-  - Egress

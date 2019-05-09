@@ -11,6 +11,6 @@ spec:
     - ipBlock:
         # flannel address of node
         # run 'ip addr show' on the node
-        cidr: 10.244.1.0/32
+        cidr: 10.132.0.37/32
     - ipBlock:
-        cidr: 10.244.2.0/32
+        cidr: 10.132.0.38/32
