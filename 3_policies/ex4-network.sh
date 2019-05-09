@@ -23,14 +23,16 @@ then
     kubectl create clusterrolebinding tiller-cluster-rule --clusterrole=cluster-admin --serviceaccount=kube-system:tiller
     kubectl patch deploy --namespace kube-system tiller-deploy -p '{"spec":{"template":{"spec":{"serviceAccount":"tiller"}}}}'
     helm init --service-account tiller --upgrade
-    sleep 5
-    helm repo update
-    helm search postgresql
-    kubectl apply -f $DIR/../1_kubeadm/resource/psp/default-psp-with-rbac.yaml
-    helm install --namespace network --name pgsql stable/postgresql --set master.podLabels.tier="database",persistence.enabled="false" --version 3.18.4
 else
-    helm delete --purge pgsql
+    helm delete --purge pgsql || echo "WARN pgsql release not found"
 fi
+
+sleep 5
+
+helm repo update
+helm search postgresql
+kubectl apply -f $DIR/../1_kubeadm/resource/psp/default-psp-with-rbac.yaml
+helm install --namespace network --name pgsql stable/postgresql --set master.podLabels.tier="database",persistence.enabled="false" --version 3.18.4
 
 # Install nginx pods
 kubectl run -n network --generator=run-pod/v1 external --image=nginx
