@@ -32,11 +32,13 @@ sleep 5
 helm repo update
 helm search postgresql
 kubectl apply -f $DIR/../1_kubeadm/resource/psp/default-psp-with-rbac.yaml
-helm install --namespace network --name pgsql stable/postgresql --set master.podLabels.tier="database",persistence.enabled="false" --version 3.18.4
+helm install --namespace network --name pgsql stable/postgresql --set master.podLabels.tier="database",persistence.enabled="false"
 
 # Install nginx pods
-kubectl run -n network --generator=run-pod/v1 external --image=nginx
+kubectl run -n network --generator=run-pod/v1 external --image=nginx -l "app=external"
 kubectl run -n network --generator=run-pod/v1 nginx --image=nginx -l "tier=webserver"
+
+kubectl expose pod external --type=NodePort --name=external
 
 sleep 5
 
