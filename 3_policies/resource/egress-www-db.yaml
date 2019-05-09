@@ -13,10 +13,3 @@ spec:
           tier: database
     ports:
     - port: 5432
-  - to:
-    - namespaceSelector:
-        matchLabels:
-          name: kube-system
-    ports:
-    - protocol: UDP
-      port: 53
