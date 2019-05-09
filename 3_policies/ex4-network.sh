@@ -92,4 +92,6 @@ kubectl apply -n network -f $KUBIA_DIR/Chapter13/network-policy-cart.yaml
 
 # Exercice try to open NodePort with CIDR
 # - use tcpdump inside port to get source IP address
-kubectl apply -n network -f $DIR/resource/allow-external...
+kubectl apply -n network -f $DIR/resource/allow-external.yaml
+kubectl apply -n network -f $DIR/resource/allow-external-ipblock.yaml
+
