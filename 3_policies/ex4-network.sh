@@ -73,12 +73,12 @@ fi
 
 cd "$KUBIA_DIR/Chapter13"
 # Edit original file, replace app with tier
-kubectl apply -n network -f $DIR/resource/network-policy-postgres.yaml
+kubectl apply -n network -f $DIR/resource/ingress-www-db.yaml
 # Edit original file, replace app with tier
-kubectl apply -n network -f $DIR/resource/network-policy-egress.yaml
+kubectl apply -n network -f $DIR/resource/egress-www-db.yaml
 # Set default deny network policies
 # See https://kubernetes.io/docs/concepts/services-networking/network-policies/#default-policies
-kubectl apply -n network -f $DIR/resource/network-policy-default-deny.yaml
+kubectl apply -n network -f $DIR/resource/default-deny.yaml
 
 # Play and test network connections after each step
 kubectl exec -n network -it nginx -- netcat -q 2 -zv pgsql-postgresql 5432
@@ -86,11 +86,10 @@ kubectl exec -n network -it nginx -- netcat -q 2 -nzv $EXTERNAL_IP 80
 kubectl exec -n network -it external -- netcat -q 2 -zv pgsql-postgresql 5432
 kubectl exec -n network -it external -- netcat -q 2 -zv www.w3.org 80
 
-
-kubectl apply -n network -f $KUBIA_DIR/Chapter13/network-policy-cart.yaml
-
 # Exercice try to open NodePort with CIDR
 # - use tcpdump inside port to get source IP address
-kubectl apply -n network -f $DIR/resource/allow-external.yaml
-kubectl apply -n network -f $DIR/resource/allow-external-ipblock.yaml
+kubectl apply -n network -f $DIR/resource/ingress-external.yaml
+kubectl apply -n network -f $DIR/resource/ingress-external-ipblock.yaml
+
+kubectl apply -n network -f $KUBIA_DIR/Chapter13/network-policy-cart.yaml
 
