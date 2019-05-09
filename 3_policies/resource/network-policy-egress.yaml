@@ -1,7 +1,7 @@
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
-  name: egress-net-policy
+  name: egress-www-db
 spec:
   podSelector:
     matchLabels:
@@ -13,3 +13,5 @@ spec:
           tier: database
     ports:
     - port: 5432
+  policyTypes:
+  - Egress

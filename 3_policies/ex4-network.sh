@@ -27,11 +27,10 @@ else
     helm delete --purge pgsql || echo "WARN pgsql release not found"
 fi
 
-sleep 5
-
 helm repo update
 helm search postgresql
 kubectl apply -f $DIR/../1_kubeadm/resource/psp/default-psp-with-rbac.yaml
+sleep 10
 helm install --namespace network --name pgsql stable/postgresql --set master.podLabels.tier="database",persistence.enabled="false"
 
 # Install nginx pods
@@ -84,7 +83,7 @@ kubectl apply -n network -f $DIR/resource/network-policy-default-deny.yaml
 # Play and test network connections after each step
 kubectl exec -n network -it nginx -- netcat -q 2 -zv pgsql-postgresql 5432
 kubectl exec -n network -it nginx -- netcat -q 2 -nzv $EXTERNAL_IP 80
-kubectl exec -n network -it external -- netcat -q 2 -nzv pgsql-postgresql 5432
+kubectl exec -n network -it external -- netcat -q 2 -zv pgsql-postgresql 5432
 kubectl exec -n network -it external -- netcat -q 2 -zv www.w3.org 80
 
 
