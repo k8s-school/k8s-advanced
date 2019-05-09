@@ -51,9 +51,9 @@ kubectl expose -n network pod external --type=NodePort --port 80 --name=external
 NODE_PORT=$(kubectl get svc external -n network  -o jsonpath="{.spec.ports[0].nodePort}")
 # Install netcat, ping, netstat and ps in these pods
 kubectl exec -n network -it external -- \
-    sh -c "apt-get update && apt-get install -y inetutils-ping netcat net-tools procps tcpdump"
+    sh -c "apt-get update && apt-get install -y dnsutils inetutils-ping netcat net-tools procps tcpdump"
 kubectl exec -n network -it nginx -- \
-    sh -c "apt-get update && apt-get install -y inetutils-ping netcat net-tools procps tcpdump"
+    sh -c "apt-get update && apt-get install -y dnsutils inetutils-ping netcat net-tools procps tcpdump"
 sleep 10
 
 
@@ -72,6 +72,10 @@ if [ ! -d "$KUBIA_DIR" ]; then
 fi
 
 cd "$KUBIA_DIR/Chapter13"
+# Enable DNS access
+kubectl label namespace kube-system name=kube-system
+kubectl apply -n network -f $DIR/resource/allow-dns-access.yaml
+
 # Edit original file, replace app with tier
 kubectl apply -n network -f $DIR/resource/ingress-www-db.yaml
 # Edit original file, replace app with tier
@@ -90,7 +94,8 @@ kubectl exec -n network -it external -- netcat -q 2 -zv www.w3.org 80
 # Exercice try to open NodePort with CIDR
 # - use tcpdump inside port to get source IP address
 kubectl apply -n network -f $DIR/resource/ingress-external.yaml
-kubectl apply -n network -f $DIR/resource/ingress-external-ipblock.yaml
 
+# TODO
+kubectl apply -n network -f $DIR/resource/ingress-external-ipblock.yaml
 kubectl apply -n network -f $KUBIA_DIR/Chapter13/network-policy-cart.yaml
 
