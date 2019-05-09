@@ -38,16 +38,6 @@ helm install --namespace network --name pgsql stable/postgresql --set master.pod
 kubectl run -n network --generator=run-pod/v1 external --image=nginx -l "app=external"
 kubectl run -n network --generator=run-pod/v1 nginx --image=nginx -l "tier=webserver"
 
-kubectl expose pod external --type=NodePort --name=external
-
-sleep 5
-
-# Install netcat, ping, netstat and ps in these pods
-kubectl exec -n network -it external -- \
-    sh -c "apt-get update && apt-get install -y inetutils-ping netcat net-tools procps"
-kubectl exec -n network -it nginx -- \
-    sh -c "apt-get update && apt-get install -y inetutils-ping netcat net-tools procps"
-
 # Wait for network:external to be in running state
 while true
 do
@@ -57,6 +47,16 @@ do
         break
     fi
 done
+
+kubectl expose -n network pod external --type=NodePort --port 80 --name=external
+
+# Install netcat, ping, netstat and ps in these pods
+kubectl exec -n network -it external -- \
+    sh -c "apt-get update && apt-get install -y inetutils-ping netcat net-tools procps"
+kubectl exec -n network -it nginx -- \
+    sh -c "apt-get update && apt-get install -y inetutils-ping netcat net-tools procps"
+sleep 10
+
 
 # then
 EXTERNAL_IP=$(kubectl get pods -n network external -o jsonpath='{.status.podIP}')
