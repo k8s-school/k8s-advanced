@@ -36,14 +36,23 @@ kubectl exec -n network -it external -- \
     sh -c "apt-get update && apt-get install -y inetutils-ping netcat net-tools procps"
 kubectl exec -n network -it nginx -- \
     sh -c "apt-get update && apt-get install -y inetutils-ping netcat net-tools procps"
-sleep 10
+
+# Wait for network:external to be in running state
+while true
+do
+    sleep 2
+    STATUS=$(kubectl get pods -n network external -o jsonpath="{.status.phase}")
+    if [ "$STATUS" = "Running" ]; then
+        break
+    fi
+done
 
 # then
 EXTERNAL_IP=$(kubectl get pods -n network external -o jsonpath='{.status.podIP}')
 PGSQL_IP=$(kubectl get pods -n network pgsql-postgresql-0 -o jsonpath='{.status.podIP}')
-kubectl exec -n network -it nginx -- netcat -zv ${PGSQL_IP} 5432
-kubectl exec -n network -it nginx -- netcat -zv pgsql-postgresql 5432
-kubectl exec -n network -it nginx -- netcat -nzv $EXTERNAL_IP 80
+kubectl exec -n network -it nginx -- netcat -q 2 -zv ${PGSQL_IP} 5432
+kubectl exec -n network -it nginx -- netcat -q 2 -zv pgsql-postgresql 5432
+kubectl exec -n network -it nginx -- netcat -q 2 -nzv $EXTERNAL_IP 80
 
 # Test network policies below
 KUBIA_DIR="/tmp/kubernetes-in-action"
