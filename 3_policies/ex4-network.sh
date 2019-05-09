@@ -9,21 +9,28 @@ DIR=$(cd "$(dirname "$0")"; pwd -P)
 
 # Run on kubeadm cluster
 # see "kubernetes in action" p391
+kubectl delete ns -l "policies=network"
 kubectl create namespace network
 kubectl label ns network "policies=network"
 
 # Exercice: Install one postgresql pod with helm and add label "tier:database" to master pod
 # Disable data persistence
-helm init
-kubectl create serviceaccount --namespace kube-system tiller
-kubectl create clusterrolebinding tiller-cluster-rule --clusterrole=cluster-admin --serviceaccount=kube-system:tiller
-kubectl patch deploy --namespace kube-system tiller-deploy -p '{"spec":{"template":{"spec":{"serviceAccount":"tiller"}}}}'
-helm init --service-account tiller --upgrade
-sleep 5
-helm repo update
-helm search postgresql
-kubectl apply -f $DIR/../1_kubeadm/resource/psp/default-psp-with-rbac.yaml
-helm install --namespace network --name pgsql stable/postgresql --set master.podLabels.tier="database",persistence.enabled="false" --version 3.18.4
+
+if ! kubectl get deployments -n kube-system tiller-deploy;
+then
+    helm init
+    kubectl create serviceaccount --namespace kube-system tiller
+    kubectl create clusterrolebinding tiller-cluster-rule --clusterrole=cluster-admin --serviceaccount=kube-system:tiller
+    kubectl patch deploy --namespace kube-system tiller-deploy -p '{"spec":{"template":{"spec":{"serviceAccount":"tiller"}}}}'
+    helm init --service-account tiller --upgrade
+    sleep 5
+    helm repo update
+    helm search postgresql
+    kubectl apply -f $DIR/../1_kubeadm/resource/psp/default-psp-with-rbac.yaml
+    helm install --namespace network --name pgsql stable/postgresql --set master.podLabels.tier="database",persistence.enabled="false" --version 3.18.4
+else
+    helm delete --purge pgsql
+fi
 
 # Install nginx pods
 kubectl run -n network --generator=run-pod/v1 external --image=nginx
