@@ -48,7 +48,6 @@ do
 done
 
 kubectl expose -n network pod external --type=NodePort --port 80 --name=external
-NODE_PORT=$(kubectl get svc external -n network  -o jsonpath="{.spec.ports[0].nodePort}")
 # Install netcat, ping, netstat and ps in these pods
 kubectl exec -n network -it external -- \
     sh -c "apt-get update && apt-get install -y dnsutils inetutils-ping netcat net-tools procps tcpdump"
@@ -72,7 +71,9 @@ if [ ! -d "$KUBIA_DIR" ]; then
 fi
 
 cd "$KUBIA_DIR/Chapter13"
-# Enable DNS access
+
+# Exercice: Secure communication between webserver and database, and test (webserver, database, external, outside)
+# Enable DNS access, see https://docs.projectcalico.org/v3.7/security/advanced-policy#5-allow-dns-egress-traffic
 kubectl label namespace kube-system name=kube-system
 kubectl apply -n network -f $DIR/resource/allow-dns-access.yaml
 
@@ -87,15 +88,24 @@ kubectl apply -n network -f $DIR/resource/default-deny.yaml
 # Play and test network connections after each step
 kubectl exec -n network -it nginx -- netcat -q 2 -nzv ${PGSQL_IP} 5432
 kubectl exec -n network -it nginx -- netcat -q 2 -zv pgsql-postgresql 5432
-kubectl exec -n network -it nginx -- netcat -q 2 -nzv $EXTERNAL_IP 80
-kubectl exec -n network -it external -- netcat -q 2 -zv pgsql-postgresql 5432
-kubectl exec -n network -it external -- netcat -q 2 -zv www.w3.org 80
+kubectl exec -n network -it nginx -- netcat -w 2 -nzv $EXTERNAL_IP 80
+kubectl exec -n network -it external -- netcat -w 2 -zv pgsql-postgresql 5432
+kubectl exec -n network -it external -- netcat -w 2 -zv www.w3.org 80
+# Ip for www.w3.org
+kubectl exec -n network -it external -- netcat -w 2 -nzv 128.30.52.100 80
 
-# Exercice try to open NodePort with CIDR
-# - use tcpdump inside port to get source IP address
+# Exercice: open NodePort
+# - use tcpdump inside host/pod to get source IP address
+# 'tcpdump port 30657 -i any'
+NODE_PORT=$(kubectl get svc external -n network  -o jsonpath="{.spec.ports[0].nodePort}")
+curl --connect-timeout 2 http://clus0-1:${NODE_PORT}
 kubectl apply -n network -f $DIR/resource/ingress-external.yaml
+curl http://clus0-1:${NODE_PORT}
 
-# TODO
+# TODO: try to open NodePort with CIDR
+# May not be possible,
+# see https://github.com/projectcalico/canal/issues/87,
+# and https://docs.projectcalico.org/v3.7/security/host-endpoints/tutorial#content-main
 kubectl apply -n network -f $DIR/resource/ingress-external-ipblock.yaml
 kubectl apply -n network -f $KUBIA_DIR/Chapter13/network-policy-cart.yaml
 
