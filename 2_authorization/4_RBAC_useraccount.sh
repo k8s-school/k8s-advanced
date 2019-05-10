@@ -59,7 +59,8 @@ kubectl --context=employee-context run --generator=run-pod/v1 -it --image=busybo
 # Create a local PersistentVolume on kube-node-1:/data/disk2
 # with label "RBAC=user"
 # see https://kubernetes.io/docs/concepts/storage/volumes/#local
-# WARN: Directory kube-node-1:/data/disk2, must exist 
+# WARN: Directory kube-node-1:/data/disk2, must exist
+NODE="kube-node-1"
 cat <<EOF >/tmp/task-pv.yaml
 apiVersion: v1
 kind: PersistentVolume
@@ -84,7 +85,7 @@ spec:
         - key: kubernetes.io/hostname
           operator: In
           values:
-          - kube-node-1
+          - $NODE
 EOF
 kubectl apply -f "/tmp/task-pv.yaml"
 

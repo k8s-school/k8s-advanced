@@ -27,11 +27,14 @@ kubectl apply -f "/tmp/ns_$NS.yaml"
 
 kubectl config set-context $(kubectl config current-context) --namespace=$NS
 
+kubectl apply -f "$DIR/manifest/local-storage.yaml"
+
 # Create a local PersistentVolume on kube-node-1:/data/disk1
 # with label "RBAC=clusterrole"
 # see https://kubernetes.io/docs/concepts/storage/volumes/#local
 # WARN: Directory kube-node-1:/data/disk1, must exist, 
 # for next exercice, create also kube-node-1:/data/disk2
+NODE="kube-node-1"
 cat <<EOF >/tmp/pv-1.yaml
 apiVersion: v1
 kind: PersistentVolume
@@ -56,7 +59,7 @@ spec:
         - key: kubernetes.io/hostname
           operator: In
           values:
-          - kube-node-1
+          - $NODE
 EOF
 kubectl apply -f "/tmp/pv-1.yaml"
 
@@ -95,4 +98,3 @@ kubectl label clusterrolebinding pv-reader "RBAC=clusterrole"
 
 # List again persistentvolumes at the cluster scope, with user "system:serviceaccount:$NS:default"
 kubectl exec -it -n $NS shell curl localhost:8001/api/v1/persistentvolumes
-
