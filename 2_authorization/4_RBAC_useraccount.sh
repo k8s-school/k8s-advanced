@@ -29,6 +29,9 @@ openssl req -new -key "$CERT_DIR/employee.key" -out "$CERT_DIR/employee.csr" \
 # Get key from dind cluster:
 # docker cp kube-master:/etc/kubernetes/pki/ca.crt ~/src/k8s-school/homefs/.certs
 # docker cp kube-master:/etc/kubernetes/pki/ca.key ~/src/k8s-school/homefs/.certs
+# Or on clus0-0@gcp:
+# sudo cp /etc/kubernetes/pki/ca.crt $HOME/.certs/ && sudo chown $USER $HOME/.certs/ca.crt
+# sudo cp /etc/kubernetes/pki/ca.key $HOME/.certs/ && sudo chown $USER $HOME/.certs/ca.key
 openssl x509 -req -in "$CERT_DIR/employee.csr" -CA "$CERT_DIR/ca.crt" \
     -CAkey "$CERT_DIR/ca.key" -CAcreateserial -out "$CERT_DIR/employee.crt" -days 500
 
@@ -60,7 +63,9 @@ kubectl --context=employee-context run --generator=run-pod/v1 -it --image=busybo
 # with label "RBAC=user"
 # see https://kubernetes.io/docs/concepts/storage/volumes/#local
 # WARN: Directory kube-node-1:/data/disk2, must exist
-NODE="kube-node-1"
+# on gcerun:
+# ssh clus0-1 -- sudo mkdir -p /data/disk2
+NODE="clus0-1"
 cat <<EOF >/tmp/task-pv.yaml
 apiVersion: v1
 kind: PersistentVolume
