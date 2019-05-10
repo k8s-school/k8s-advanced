@@ -40,7 +40,13 @@ kubectl get po
 kubectl delete pods requests-pod-4
 
 kubectl apply -f limited-pod.yaml
+sleep 5
 kubectl describe pod limited-pod
 kubectl exec -it limited-pod top
+
+kubectl apply -f $DIR/../3_authorization/manifest/local-storage.yaml
+kubectl apply -f limits.yaml
+kubectl apply -f limits-pod-too-big.yaml
+kubectl apply -f ../Chapter03/kubia-manual.yaml
 
 kubectl config set-context $(kubectl config current-context) --namespace=default
