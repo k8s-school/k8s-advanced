@@ -8,20 +8,24 @@ set -x
 
 DIR=$(cd "$(dirname "$0")"; pwd -P)
 
+NS="baz"
+
 # Delete all namespaces, clusterrole, clusterrolebinding, pv
 # with label 'RBAC=role' to make current script idempotent
 kubectl delete pv,ns,clusterrole,clusterrolebinding -l RBAC=clusterrole
 
-# Create namespace 'foo' in yaml, with label "RBAC=clusterrole"
-cat <<EOF >/tmp/ns_foo.yaml
+# Create namespace '$NS' in yaml, with label "RBAC=clusterrole"
+cat <<EOF >/tmp/ns_$NS.yaml
 apiVersion: v1
 kind: Namespace
 metadata:
-  name: foo
+  name: $NS
   labels:
     RBAC: clusterrole
 EOF
-kubectl apply -f "/tmp/ns_foo.yaml"
+kubectl apply -f "/tmp/ns_$NS.yaml"
+
+kubectl config set-context $(kubectl config current-context) --namespace=$NS
 
 # Create a local PersistentVolume on kube-node-1:/data/disk1
 # with label "RBAC=clusterrole"
@@ -62,33 +66,33 @@ kubectl create clusterrole pv-reader --verb=get,list --resource=persistentvolume
 # Add label "RBAC=clusterrole"
 kubectl label clusterrole pv-reader "RBAC=clusterrole"
 
-# Create pod using image 'luksa/kubectl-proxy', and named 'shell' in ns 'foo'
-kubectl run --generator=run-pod/v1 shell --image=luksa/kubectl-proxy -n foo
+# Create pod using image 'luksa/kubectl-proxy', and named 'shell' in ns '$NS'
+kubectl run --generator=run-pod/v1 shell --image=luksa/kubectl-proxy -n $NS
 
-# Wait for foo:shell to be in running state
+# Wait for $NS:shell to be in running state
 while true
 do
     sleep 2
-    STATUS=$(kubectl get pods -n foo shell -o jsonpath="{.status.phase}")
+    STATUS=$(kubectl get pods -n $NS shell -o jsonpath="{.status.phase}")
     if [ "$STATUS" = "Running" ]; then
         break
     fi
 done
 
-# List persistentvolumes at the cluster scope, with user "system:serviceaccount:foo:default"
-kubectl exec -it -n foo shell curl localhost:8001/api/v1/persistentvolumes
+# List persistentvolumes at the cluster scope, with user "system:serviceaccount:$NS:default"
+kubectl exec -it -n $NS shell curl localhost:8001/api/v1/persistentvolumes
 
 # Create rolebinding 'pv-reader' which can get and list resource 'persistentvolumes'
-kubectl create rolebinding pv-reader --clusterrole=pv-reader --serviceaccount=foo:default -n foo
+kubectl create rolebinding pv-reader --clusterrole=pv-reader --serviceaccount=$NS:default -n $NS
 
-# List again persistentvolumes at the cluster scope, with user "system:serviceaccount:foo:default"
-kubectl exec -it -n foo shell curl localhost:8001/api/v1/persistentvolumes
+# List again persistentvolumes at the cluster scope, with user "system:serviceaccount:$NS:default"
+kubectl exec -it -n $NS shell curl localhost:8001/api/v1/persistentvolumes
 
 # Why does it not work? Find the solution.
-kubectl delete rolebinding pv-reader -n foo
-kubectl create clusterrolebinding pv-reader --clusterrole=pv-reader --serviceaccount=foo:default -n foo
+kubectl delete rolebinding pv-reader -n $NS
+kubectl create clusterrolebinding pv-reader --clusterrole=pv-reader --serviceaccount=$NS:default -n $NS
 kubectl label clusterrolebinding pv-reader "RBAC=clusterrole"
 
-# List again persistentvolumes at the cluster scope, with user "system:serviceaccount:foo:default"
-kubectl exec -it -n foo shell curl localhost:8001/api/v1/persistentvolumes
+# List again persistentvolumes at the cluster scope, with user "system:serviceaccount:$NS:default"
+kubectl exec -it -n $NS shell curl localhost:8001/api/v1/persistentvolumes
 

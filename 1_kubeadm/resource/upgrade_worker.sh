@@ -16,4 +16,4 @@ sudo apt-get install -y kubectl="$LATEST_KUBEADM" kubelet="$LATEST_KUBEADM" \
 sudo apt-mark hold kubeadm kubelet kubectl
 
 sudo systemctl restart kubelet
-sudo systemctl status kubelet
+#sudo systemctl status kubelet
