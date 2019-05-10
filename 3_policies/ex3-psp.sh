@@ -1,4 +1,4 @@
-#!/bin/sh
+toto#!/bin/sh
 
 set -e
 set -x
