@@ -137,3 +137,6 @@ kubectl label clusterrolebinding pv-reader-afnic "RBAC=user"
 
 # Try to get pv using 'employee-context'
 kubectl --context=employee-context get pv
+
+# Exercice: remove pod resource for deployment-manager role and check what happen when creatin a deployment, then a pod?
+# Answer: deployment runs ok, but it is not possible to create a pod (think of controllers role)
