@@ -1,0 +1,46 @@
+#!/bin/sh
+
+set -e
+set -x
+
+NS="compute"
+
+# Run on 3_kubeadm to get LimitRange
+# see "kubernetes in action" p405
+kubectl delete ns -l "compute=true"
+kubectl create namespace "$NS"
+kubectl label ns "$NS" "compute=true"
+
+kubectl config set-context $(kubectl config current-context) --namespace=$NS
+
+# Test network policies below
+KUBIA_DIR="/tmp/kubernetes-in-action"
+if [ ! -d "$KUBIA_DIR" ]; then
+    git clone https://github.com/luksa/kubernetes-in-action.git /tmp/kubernetes-in-action
+
+fi
+
+cd "$KUBIA_DIR/Chapter14"
+
+kubectl apply -f requests-pod.yaml
+sleep 5
+kubectl exec -it requests-pod top
+
+# INSPECTING A NODE’S CAPACITY
+kubectl run requests-pod-2 --image=busybox --restart Never --requests='cpu=800m,memory=20Mi' -- dd if=/dev/zero of=/dev/null
+sleep 5
+kubectl get po requests-pod-2
+# Exercice: flood the cluster CPU capacity by creation two pods
+kubectl run requests-pod-3 --image=busybox --restart Never --requests='cpu=1.5,memory=20Mi' -- dd if=/dev/zero of=/dev/null
+kubectl run requests-pod-4 --image=busybox --restart Never --requests='cpu=1.5,memory=20Mi' -- dd if=/dev/zero of=/dev/null
+kubectl describe po requests-pod-4
+kubectl describe node clus0-1
+kubectl delete po requests-pod-3
+kubectl get po
+kubectl delete pods requests-pod-4
+
+kubectl apply -f limited-pod.yaml
+kubectl describe pod limited-pod
+kubectl exec -it limited-pod top
+
+kubectl config set-context $(kubectl config current-context) --namespace=default

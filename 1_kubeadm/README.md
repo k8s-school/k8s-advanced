@@ -11,8 +11,8 @@ sudo kubeadm upgrade apply --config /etc/kubeadm/kubeadm-config.yaml
 # Set up tunnel for gce instance
 
 ```shell
-gcloud compute ssh example-instance \
-    --project my-project \
-    --zone us-central1-a \
-    -- -L 2222:localhost:8888
+# It will not work because of SSL certs (localhost is not recognized)
+NODE=clus0-0
+ssh $NODE \
+    -L 6443:localhost:6443
 ```
