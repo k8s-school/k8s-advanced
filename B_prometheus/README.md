@@ -6,13 +6,12 @@ WARN: tested on dind-cluster.
 
 # Install premetheus-operator
 
-## Use helm
-
 Detailed documentation is available here:
 https://itnext.io/kubernetes-monitoring-with-prometheus-in-15-minutes-8e54d1de2e13
 
 ```shell
-helm init
+# on dind run: helm init
+# on kubeadm/gke see in A_elasticsearch
 helm install stable/prometheus-operator --name prometheus-operator --namespace monitoring
 
 # Prometheus access:
@@ -27,4 +26,27 @@ NODE=clus0-0
 gcloud compute ssh  --ssh-flag="-L 3000:localhost:3000" "$NODE"
 ```
 
+# Install metric-server
+
+Enable 'kubectl top' command and hpa.
+
+```shell
+cd $HOME
+git clone https://github.com/kubernetes-incubator/metrics-server
+kubectl apply -f metrics-server/deploy/1.8+
+
+# Allow insecure tls, because of self-signed certificate
+fjammes15_gmail_com@clus0-0:~/metrics-server$ git diff
+diff --git a/deploy/1.8+/metrics-server-deployment.yaml b/deploy/1.8+/metrics-server-deployment.yaml
+index 2a8c5fe..2a16d21 100644
+--- a/deploy/1.8+/metrics-server-deployment.yaml
++++ b/deploy/1.8+/metrics-server-deployment.yaml
+@@ -34,4 +34,7 @@ spec:
+         volumeMounts:
+         - name: tmp-dir
+           mountPath: /tmp
++        command:
++        - /metrics-server
++        - --kubelet-insecure-tls
+```
 
