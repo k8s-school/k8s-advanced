@@ -35,8 +35,11 @@ do
 done
 
 # Access svc 'foo:microbot-service' from pod 'bar:shell'
-kubectl exec -it -n bar shell curl microbot-service.foo
-
+while ! kubectl exec -it -n bar shell -- curl --connect-timeout 2 microbot-service.foo
+do
+    echo "Waiting for microbot svc"
+    sleep 2
+done
 # Set the namespace preference to 'foo'
 # so that all kubectl command are ran in ns 'foo' by default
 kubectl config set-context $(kubectl config current-context) --namespace=foo
