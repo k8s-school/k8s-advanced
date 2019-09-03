@@ -6,7 +6,7 @@ WARN: tested on dind-cluster+kubeadm, do not work well on GKE.
 
 # Pre-requisite: Initialize helm
 
-See (../A_elasticsearch/helm_init.sh)
+See [script](../A_elasticsearch/helm_init.sh)
 
 # Ex1: Install prometheus-operator
 
