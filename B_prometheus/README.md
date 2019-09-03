@@ -2,7 +2,7 @@
 
 An up and running k8s cluster
 
-WARN: tested on dind-cluster+kubeadm, do not work well on GKE.
+WARN: successfully tested on kind-v0.5.1, do not work well on GKE.
 
 # Pre-requisite: Initialize helm
 
