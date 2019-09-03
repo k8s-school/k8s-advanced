@@ -4,6 +4,10 @@ An up and running k8s cluster
 
 WARN: tested on dind-cluster+kubeadm, do not work well on GKE.
 
+# Pre-requisite: Initialize helm
+
+See (../A_elasticsearch/helm_init.sh)
+
 # Ex1: Install prometheus-operator
 
 Detailed documentation is available here:
