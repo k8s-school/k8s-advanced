@@ -1,0 +1,20 @@
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: traefik-metrics-servicemonitor
+  # Change this to the namespace the Prometheus instance is running in
+  namespace: monitoring 
+  labels:
+    app: traefik-runner-gitlab-runner
+    release: prometheus
+spec:
+  selector:
+    matchLabels:
+      k8s-app: traefik-ingress-lb
+  namespaceSelector:
+    matchNames:
+    - default
+  endpoints:
+  - port: admin 
+    path: /metrics 
+    interval: 15s
