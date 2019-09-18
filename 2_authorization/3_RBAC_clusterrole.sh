@@ -25,8 +25,10 @@ metadata:
 EOF
 kubectl apply -f "/tmp/ns_$NS.yaml"
 
+# Use namespace 'baz' in current context
 kubectl config set-context $(kubectl config current-context) --namespace=$NS
 
+# Create local storage class
 kubectl apply -f "$DIR/manifest/local-storage.yaml"
 
 # Create a local PersistentVolume on kube-node-1:/data/disk1
