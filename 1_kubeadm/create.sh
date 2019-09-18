@@ -5,6 +5,35 @@
 set -e
 set -x
 
+usage() {
+    cat << EOD
+Usage: $(basename "$0") [options]
+Available options:
+  -p            Add support for policies (psp+network)
+  -h            This message
+
+Init k8s master
+
+EOD
+}
+
+POLICY_OPT=""
+
+# Get the options
+while getopts hp c ; do
+    case $c in
+        p) POLICY_OPT="-p" ;;
+        h) usage ; exit 0 ;;
+        \?) usage ; exit 2 ;;
+    esac
+done
+shift "$((OPTIND-1))"
+
+if [ $# -ne 0 ] ; then
+    usage
+    exit 2
+fi
+
 DIR=$(cd "$(dirname "$0")"; pwd -P)
 
 . "$DIR/env.sh"
@@ -21,8 +50,7 @@ echo "Initialize master"
 echo "-----------------"
 # $SSH "$USER@$MASTER" -- sh /tmp/resource/init.sh
 
-# Enable policies (psp + network)
-$SSH "$USER@$MASTER" -- sh /tmp/resource/init.sh -p
+$SSH "$USER@$MASTER" -- sh /tmp/resource/init.sh "$POLICY_OPT"
 
 echo "Join nodes"
 echo "----------"
