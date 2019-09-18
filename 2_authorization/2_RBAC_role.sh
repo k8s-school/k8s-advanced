@@ -42,14 +42,7 @@ kubectl config set-context $(kubectl config current-context) --namespace=foo
 kubectl run --generator=run-pod/v1 shell --image=luksa/kubectl-proxy -n foo
 
 # Wait for foo:shell to be in running state
-while true
-do
-    sleep 2
-    STATUS=$(kubectl get pods -n foo shell -o jsonpath="{.status.phase}")
-    if [ "$STATUS" = "Running" ]; then
-        break
-    fi
-done
+kubectl  wait -n foo --for=condition=Ready pods shell
 
 # Check RBAC is enabled:
 # inside foo:shell, curl k8s api server 
