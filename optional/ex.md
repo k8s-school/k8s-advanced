@@ -17,10 +17,3 @@ https://github.com/walidshaari/Kubernetes-Certified-Administrator
 
 https://github.com/wardviaene/advanced-kubernetes-course
 
-# Istio
-
-https://istio.io/docs/examples/bookinfo/
-
-# Traefik
-
-https://docs.traefik.io/user-guide/kubernetes/

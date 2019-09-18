@@ -27,14 +27,16 @@ kubectl apply -f "/tmp/pod.yaml"
 kubectl label pod curl-custom-sa "RBAC=sa"
 
 # Wait for pod to be in running state
-while true
-do
-    sleep 2
-    STATUS=$(kubectl get pods curl-custom-sa -o jsonpath="{.status.phase}")
-    if [ "$STATUS" = "Running" ]; then
-        break
-    fi
-done
+# while true
+# do
+#    sleep 2
+#    STATUS=$(kubectl get pods curl-custom-sa -o jsonpath="{.status.phase}")
+#    if [ "$STATUS" = "Running" ]; then
+#        break
+#    fi
+# done
+
+kubectl  wait --for=condition=Ready pods curl-custom-sa
 
 # Inspect the token mounted into the pod’s container(s)
 kubectl exec -it curl-custom-sa -c main \

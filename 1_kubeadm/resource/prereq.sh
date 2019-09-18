@@ -23,6 +23,25 @@ apt-get install -y ipvsadm
 
 # containerd
 ##
+
+## Pre-requisites
+cat > /etc/modules-load.d/containerd.conf <<EOF
+overlay
+br_netfilter
+EOF
+
+modprobe overlay
+modprobe br_netfilter
+
+# Setup required sysctl params, these persist across reboots.
+cat > /etc/sysctl.d/99-kubernetes-cri.conf <<EOF
+net.bridge.bridge-nf-call-iptables  = 1
+net.ipv4.ip_forward                 = 1
+net.bridge.bridge-nf-call-ip6tables = 1
+EOF
+
+sysctl --system
+
 ## Set up the repository
 ### Install packages to allow apt to use a repository over HTTPS
 apt-get install -y apt-transport-https ca-certificates curl software-properties-common
@@ -62,9 +81,3 @@ tar zxvf /tmp/helm.tgz
 chmod +x /tmp/linux-amd64/helm
 mv /tmp/linux-amd64/helm /usr/local/bin/helm-${HELM_VERSION}
 ln -sf /usr/local/bin/helm-${HELM_VERSION} /usr/local/bin/helm
-
-# Allow bridged packets to traverse iptables rules
-modprobe br_netfilter
-sysctl -p
-echo '1' > /proc/sys/net/bridge/bridge-nf-call-iptables
-echo '1' > /proc/sys/net/ipv4/ip_forward

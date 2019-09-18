@@ -61,6 +61,7 @@ kubectl describe quota
 # so there is an inconsistency in example
 kubectl apply -f "$KUBIA_DIR"/Chapter14/quota-storage.yaml
 kubectl apply -f "$KUBIA_DIR"/Chapter14/quota-object-count.yaml
+kubectl apply -f "$KUBIA_DIR"/Chapter14/quota-scoped.yaml
 
 
 kubectl config set-context $(kubectl config current-context) --namespace=default

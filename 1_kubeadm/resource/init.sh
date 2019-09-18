@@ -42,10 +42,13 @@ sudo cp -f "$DIR/tokens.csv" $TOKEN_DIR
 sudo mkdir -p /etc/kubeadm
 sudo cp -f $DIR/kubeadm-config*.yaml /etc/kubeadm
 
-#if [ ! -d "$HOME/k8s-advanced" ]
-#then
-#    git clone https://gitlab.com/fjammes/k8s-advanced.git $HOME/k8s-advanced
-#fi
+if [ ! -d "$HOME/k8s-advanced" ]
+then
+    git clone https://github.com/k8s-school/k8s-advanced.git  $HOME/k8s-advanced
+else
+    cd "$HOME/k8s-advanced"
+    git pull
+fi
 
 if [ -n "$POLICY" ]; then
     echo "-- Enable POLICY --"

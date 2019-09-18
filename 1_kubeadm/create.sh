@@ -19,13 +19,16 @@ parallel -vvv --tag -- "gcloud compute ssh $USER@{} -- sudo 'sh /tmp/resource/pr
 
 echo "Initialize master"
 echo "-----------------"
-$SSH "$USER@$MASTER" -- sh /tmp/resource/init.sh
+# $SSH "$USER@$MASTER" -- sh /tmp/resource/init.sh
+
+# Enable policies (psp + network)
+$SSH "$USER@$MASTER" -- sh /tmp/resource/init.sh -p
 
 echo "Join nodes"
 echo "----------"
 # TODO test '-ttl' option
 JOIN_CMD=$($SSH "$USER@$MASTER" -- 'sudo kubeadm token create --print-join-command')
 # Remove trailing carriage return
-JOIN_CMD=$(echo "$JOIN_CMD" | sed -e 's/[\r\n]//g')
+JOIN_CMD=$(echo "$JOIN_CMD" | grep 'kubeadm' | sed -e 's/[\r\n]//g')
 echo "Join command: $JOIN_CMD"
 parallel -vvv --tag -- "$SSH $USER@{} -- sudo '$JOIN_CMD'" ::: $NODES
