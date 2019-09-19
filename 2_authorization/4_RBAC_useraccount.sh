@@ -9,8 +9,8 @@ set -x
 
 DIR=$(cd "$(dirname "$0")"; pwd -P)
 
-# Use context 'kubernetes-admin@kubernetes' and delete ns,pv with label "RBAC=user"
-kubectl config use-context kubernetes-admin@kubernetes
+# Use context 'kubernetes-admin@kind' and delete ns,pv with label "RBAC=user"
+kubectl config use-context kubernetes-admin@kind
 kubectl delete pv,clusterrolebinding,ns -l "RBAC=user"
 
 # Create namespace 'foo' in yaml, with label "RBAC=clusterrole"
@@ -27,8 +27,8 @@ openssl req -new -key "$CERT_DIR/employee.key" -out "$CERT_DIR/employee.csr" \
     -subj "/CN=employee/O=afnic"
 
 # Get key from dind cluster:
-# docker cp kube-master:/etc/kubernetes/pki/ca.crt ~/src/k8s-school/homefs/.certs
-# docker cp kube-master:/etc/kubernetes/pki/ca.key ~/src/k8s-school/homefs/.certs
+docker cp kind-control-plane:/etc/kubernetes/pki/ca.crt ~/src/k8s-school/homefs/.certs
+docker cp kind-control-plane:/etc/kubernetes/pki/ca.key ~/src/k8s-school/homefs/.certs
 # Or on clus0-0@gcp:
 # sudo cp /etc/kubernetes/pki/ca.crt $HOME/.certs/ && sudo chown $USER $HOME/.certs/ca.crt
 # sudo cp /etc/kubernetes/pki/ca.key $HOME/.certs/ && sudo chown $USER $HOME/.certs/ca.key
