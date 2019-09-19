@@ -10,7 +10,7 @@ set -x
 DIR=$(cd "$(dirname "$0")"; pwd -P)
 
 KIND_CLUSTER_NAME="kind"
-KIND_CONTEXT="kubernetes-admin@kubernetes"
+KIND_CONTEXT="kubernetes-admin@kind"
 # WARN: Directory kind-worker:/data/disk2, must exist
 # on kind run:
 # docker exec -it -- kind-worker mkdir -p /data/disk2
