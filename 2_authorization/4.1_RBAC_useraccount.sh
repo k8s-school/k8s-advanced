@@ -9,6 +9,10 @@ set -x
 
 DIR=$(cd "$(dirname "$0")"; pwd -P)
 
+KIND_CLUSTER_NAME="kind"
+KIND_CONTEXT="kubernetes-admin@kubernetes"
+ORG="hpe"
+
 # Use context 'kubernetes-admin@kind' and delete ns,pv with label "RBAC=user"
 kubectl config use-context kubernetes-admin@kind
 kubectl delete pv,clusterrolebinding,ns -l "RBAC=user"
@@ -18,26 +22,10 @@ kubectl create ns office
 kubectl label ns office "RBAC=user"
 
 CERT_DIR="$HOME/.certs"
-mkdir -p "$CERT_DIR"
-
-# Follow "Use case 1" with ns foo instead of office
-# in certificate subject CN is the use name and O the group
-openssl genrsa -out "$CERT_DIR/employee.key" 2048
-openssl req -new -key "$CERT_DIR/employee.key" -out "$CERT_DIR/employee.csr" \
-    -subj "/CN=employee/O=afnic"
-
-# Get key from dind cluster:
-docker cp kind-control-plane:/etc/kubernetes/pki/ca.crt ~/src/k8s-school/homefs/.certs
-docker cp kind-control-plane:/etc/kubernetes/pki/ca.key ~/src/k8s-school/homefs/.certs
-# Or on clus0-0@gcp:
-# sudo cp /etc/kubernetes/pki/ca.crt $HOME/.certs/ && sudo chown $USER $HOME/.certs/ca.crt
-# sudo cp /etc/kubernetes/pki/ca.key $HOME/.certs/ && sudo chown $USER $HOME/.certs/ca.key
-openssl x509 -req -in "$CERT_DIR/employee.csr" -CA "$CERT_DIR/ca.crt" \
-    -CAkey "$CERT_DIR/ca.key" -CAcreateserial -out "$CERT_DIR/employee.crt" -days 500
 
 kubectl config set-credentials employee --client-certificate="$CERT_DIR/employee.crt" \
     --client-key="$CERT_DIR/employee.key"
-kubectl config set-context employee-context --cluster=kubernetes --namespace=office \
+kubectl config set-context employee-context --cluster="$KIND_CLUSTER_NAME" --namespace=office \
     --user=employee
 
 kubectl --context=employee-context get pods || \
@@ -125,15 +113,15 @@ done
 kubectl exec -it task-pv-pod echo "SUCCESS in lauching command in task-pv-pod"
 
 # Switch back to context kubernetes-admin@kubernetes
-kubectl config use-context kubernetes-admin@kubernetes
+kubectl config use-context "$KIND_CONTEXT"
 
 # Try to get pv using 'employee-context'
 kubectl --context=employee-context get pv || 
     >&2 echo "ERROR to get pv"
 
-# Create a 'clusterrolebinding' between clusterrole=pv-reader and group=afnic
-kubectl create clusterrolebinding pv-reader-afnic --clusterrole=pv-reader --group=afnic
-kubectl label clusterrolebinding pv-reader-afnic "RBAC=user"
+# Create a 'clusterrolebinding' between clusterrole=pv-reader and group=$ORG
+kubectl create clusterrolebinding "pv-reader-$ORG" --clusterrole=pv-reader --group="$ORG"
+kubectl label clusterrolebinding "pv-reader-$ORG" "RBAC=user"
 
 # Try to get pv using 'employee-context'
 kubectl --context=employee-context get pv
