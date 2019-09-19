@@ -124,5 +124,11 @@ kubectl label clusterrolebinding "pv-reader-$ORG" "RBAC=user"
 # Try to get pv using 'employee-context'
 kubectl --context=employee-context get pv
 
-# Exercice: remove pod resource for deployment-manager role and check what happen when creatin a deployment, then a pod?
-# Answer: deployment runs ok, but it is not possible to create a pod (think of controllers role)
+# Exercice: remove pod resource for deployment-manager role and check what happen when creating a deployment, then a pod?
+# kubectl apply -f manifest/role-deployment-manager-nopod-rbac.yaml
+# Work ok:
+# kubectl --context=employee-context create deployment --image=nginx nginx
+# Do not work: 
+# kubectl --context=employee-context run --generator=run-pod/v1 --image=nginx nginx
+# Error from server (Forbidden): pods is forbidden: User "employee" cannot create resource "pods" in API group "" in the namespace "office"
+# => Answer: deployment runs ok, but it is not possible to create a pod (think of controllers role)
