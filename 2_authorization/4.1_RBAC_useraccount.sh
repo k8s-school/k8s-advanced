@@ -11,6 +11,13 @@ DIR=$(cd "$(dirname "$0")"; pwd -P)
 
 KIND_CLUSTER_NAME="kind"
 KIND_CONTEXT="kubernetes-admin@kubernetes"
+# WARN: Directory kind-worker:/data/disk2, must exist
+# on kind run:
+# docker exec -it -- kind-worker mkdir -p /data/disk2
+# on gcerun:
+# ssh clus0-1 -- sudo mkdir -p /data/disk2
+PV_NODE="kind-worker"
+
 ORG="hpe"
 
 # Use context 'kubernetes-admin@kind' and delete ns,pv with label "RBAC=user"
@@ -51,9 +58,7 @@ kubectl --context=employee-context run --generator=run-pod/v1 -it --image=busybo
 # with label "RBAC=user"
 # see https://kubernetes.io/docs/concepts/storage/volumes/#local
 # WARN: Directory kube-node-1:/data/disk2, must exist
-# on gcerun:
-# ssh clus0-1 -- sudo mkdir -p /data/disk2
-NODE="clus0-1"
+
 cat <<EOF >/tmp/task-pv.yaml
 apiVersion: v1
 kind: PersistentVolume
@@ -78,7 +83,7 @@ spec:
         - key: kubernetes.io/hostname
           operator: In
           values:
-          - $NODE
+          - $PV_NODE
 EOF
 kubectl apply -f "/tmp/task-pv.yaml"
 
@@ -100,14 +105,7 @@ kubectl --context=employee-context apply -f "$DIR/manifest/pvc.yaml"
 kubectl apply -f https://k8s.io/examples/pods/storage/pv-pod.yaml
 
 # Wait for office:task-pv-pod to be in running state
-while true
-do
-    sleep 2
-    STATUS=$(kubectl get pods -n office task-pv-pod -o jsonpath="{.status.phase}")
-    if [ "$STATUS" = "Running" ]; then
-        break
-    fi
-done
+kubectl  wait --for=condition=Ready -n office pods task-pv-pod
 
 # Launch a command in task-pv-pod
 kubectl exec -it task-pv-pod echo "SUCCESS in lauching command in task-pv-pod"
