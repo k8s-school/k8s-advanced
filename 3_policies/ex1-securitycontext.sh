@@ -39,7 +39,7 @@ kubectl  wait --for=condition=Ready pods "$POD"
 kubectl exec "$POD" ps aux
 
 # RUNNING A POD WITHOUT SPECIFYING A SECURITY CONTEXT
-POD="pod-with-default"
+POD="pod-with-defaults"
 kubectl run "$POD" --generator=run-pod/v1 --image alpine --restart Never -- /bin/sleep 999999
 kubectl  wait --for=condition=Ready pods "$POD"
 kubectl exec "$POD" id
@@ -78,7 +78,7 @@ kubectl exec "$POD" chown guest /tmp && >&2 echo "ERROR this command should have
 POD="pod-with-readonly-filesystem"
 kubectl apply -f "$POD.yaml"
 kubectl  wait --for=condition=Ready pods "$POD"
-kubectl exec "$POD" touch /new-file >&2 echo "ERROR this command should have failed"
+kubectl exec "$POD" touch /new-file && >&2 echo "ERROR this command should have failed"
 kubectl exec -it "$POD" touch /volume/newfile
 kubectl exec -it "$POD" -- ls -la /volume/newfile
 
