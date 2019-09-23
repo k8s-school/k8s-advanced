@@ -9,8 +9,19 @@ set -x
 
 DIR=$(cd "$(dirname "$0")"; pwd -P)
 
-# Use context 'kubernetes-admin@kubernetes' and delete ns,pv with label "RBAC=user"
-kubectl config use-context kubernetes-admin@kubernetes
+KIND_CLUSTER_NAME="kind"
+KIND_CONTEXT="kubernetes-admin@kind"
+# WARN: Directory kind-worker:/data/disk2, must exist
+# on kind run:
+# docker exec -it -- kind-worker mkdir -p /data/disk2
+# on gcerun:
+# ssh clus0-1 -- sudo mkdir -p /data/disk2
+PV_NODE="kind-worker"
+
+ORG="hpe"
+
+# Use context 'kubernetes-admin@kind' and delete ns,pv with label "RBAC=user"
+kubectl config use-context kubernetes-admin@kind
 kubectl delete pv,clusterrolebinding,ns -l "RBAC=user"
 
 # Create namespace 'foo' in yaml, with label "RBAC=clusterrole"
@@ -18,26 +29,10 @@ kubectl create ns office
 kubectl label ns office "RBAC=user"
 
 CERT_DIR="$HOME/.certs"
-mkdir -p "$CERT_DIR"
-
-# Follow "Use case 1" with ns foo instead of office
-# in certificate subject CN is the use name and O the group
-openssl genrsa -out "$CERT_DIR/employee.key" 2048
-openssl req -new -key "$CERT_DIR/employee.key" -out "$CERT_DIR/employee.csr" \
-    -subj "/CN=employee/O=afnic"
-
-# Get key from dind cluster:
-# docker cp kube-master:/etc/kubernetes/pki/ca.crt ~/src/k8s-school/homefs/.certs
-# docker cp kube-master:/etc/kubernetes/pki/ca.key ~/src/k8s-school/homefs/.certs
-# Or on clus0-0@gcp:
-# sudo cp /etc/kubernetes/pki/ca.crt $HOME/.certs/ && sudo chown $USER $HOME/.certs/ca.crt
-# sudo cp /etc/kubernetes/pki/ca.key $HOME/.certs/ && sudo chown $USER $HOME/.certs/ca.key
-openssl x509 -req -in "$CERT_DIR/employee.csr" -CA "$CERT_DIR/ca.crt" \
-    -CAkey "$CERT_DIR/ca.key" -CAcreateserial -out "$CERT_DIR/employee.crt" -days 500
 
 kubectl config set-credentials employee --client-certificate="$CERT_DIR/employee.crt" \
     --client-key="$CERT_DIR/employee.key"
-kubectl config set-context employee-context --cluster=kubernetes --namespace=office \
+kubectl config set-context employee-context --cluster="$KIND_CLUSTER_NAME" --namespace=office \
     --user=employee
 
 kubectl --context=employee-context get pods || \
@@ -63,9 +58,7 @@ kubectl --context=employee-context run --generator=run-pod/v1 -it --image=busybo
 # with label "RBAC=user"
 # see https://kubernetes.io/docs/concepts/storage/volumes/#local
 # WARN: Directory kube-node-1:/data/disk2, must exist
-# on gcerun:
-# ssh clus0-1 -- sudo mkdir -p /data/disk2
-NODE="clus0-1"
+
 cat <<EOF >/tmp/task-pv.yaml
 apiVersion: v1
 kind: PersistentVolume
@@ -90,7 +83,7 @@ spec:
         - key: kubernetes.io/hostname
           operator: In
           values:
-          - $NODE
+          - $PV_NODE
 EOF
 kubectl apply -f "/tmp/task-pv.yaml"
 
@@ -112,31 +105,30 @@ kubectl --context=employee-context apply -f "$DIR/manifest/pvc.yaml"
 kubectl apply -f https://k8s.io/examples/pods/storage/pv-pod.yaml
 
 # Wait for office:task-pv-pod to be in running state
-while true
-do
-    sleep 2
-    STATUS=$(kubectl get pods -n office task-pv-pod -o jsonpath="{.status.phase}")
-    if [ "$STATUS" = "Running" ]; then
-        break
-    fi
-done
+kubectl  wait --for=condition=Ready -n office pods task-pv-pod
 
 # Launch a command in task-pv-pod
 kubectl exec -it task-pv-pod echo "SUCCESS in lauching command in task-pv-pod"
 
 # Switch back to context kubernetes-admin@kubernetes
-kubectl config use-context kubernetes-admin@kubernetes
+kubectl config use-context "$KIND_CONTEXT"
 
 # Try to get pv using 'employee-context'
 kubectl --context=employee-context get pv || 
     >&2 echo "ERROR to get pv"
 
-# Create a 'clusterrolebinding' between clusterrole=pv-reader and group=afnic
-kubectl create clusterrolebinding pv-reader-afnic --clusterrole=pv-reader --group=afnic
-kubectl label clusterrolebinding pv-reader-afnic "RBAC=user"
+# Create a 'clusterrolebinding' between clusterrole=pv-reader and group=$ORG
+kubectl create clusterrolebinding "pv-reader-$ORG" --clusterrole=pv-reader --group="$ORG"
+kubectl label clusterrolebinding "pv-reader-$ORG" "RBAC=user"
 
 # Try to get pv using 'employee-context'
 kubectl --context=employee-context get pv
 
-# Exercice: remove pod resource for deployment-manager role and check what happen when creatin a deployment, then a pod?
-# Answer: deployment runs ok, but it is not possible to create a pod (think of controllers role)
+# Exercice: remove pod resource for deployment-manager role and check what happen when creating a deployment, then a pod?
+# kubectl apply -f manifest/role-deployment-manager-nopod-rbac.yaml
+# Work ok:
+# kubectl --context=employee-context create deployment --image=nginx nginx
+# Do not work: 
+# kubectl --context=employee-context run --generator=run-pod/v1 --image=nginx nginx
+# Error from server (Forbidden): pods is forbidden: User "employee" cannot create resource "pods" in API group "" in the namespace "office"
+# => Answer: deployment runs ok, but it is not possible to create a pod (think of controllers role)
