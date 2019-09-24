@@ -11,7 +11,7 @@ NS="psp-advanced"
 kubectl delete ns,psp -l "policies=$NS"
 
 kubectl create namespace "$NS"
-kubectl label ns psp-example "policies=$NS"
+kubectl label ns "$NS" "policies=$NS"
 
 KUBIA_DIR="/tmp/kubernetes-in-action"
 if [ ! -d "$KUBIA_DIR" ]; then
