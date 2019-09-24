@@ -8,7 +8,7 @@ set -x
 
 NS="psp-advanced"
 
-kubectl delete ns,psp, clusterrolebindings -l "policies=$NS"
+kubectl delete ns,psp,clusterrolebindings -l "policies=$NS"
 
 kubectl create namespace "$NS"
 kubectl label ns "$NS" "policies=$NS"
