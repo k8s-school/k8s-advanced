@@ -31,7 +31,7 @@ kubectl create rolebinding alice:edit \
 # Check
 alias kubectl-user="kubectl --as=alice --namespace '$NS'"
 
-kubectl-user run --generator=run-pod/v1 -it ubuntu --image=ubuntu id
+kubectl-user run --generator=run-pod/v1 -it ubuntu --image=ubuntu id --restart Never
 
 # Remark: cluster-admin has access to all psp (see cluster-admin role), and use the most permissive in each section
 
