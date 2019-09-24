@@ -8,7 +8,7 @@ set -x
 
 NS="psp-advanced"
 
-kubectl delete ns,psp -l "policies=$NS"
+kubectl delete ns,psp, clusterrolebindings -l "policies=$NS"
 
 kubectl create namespace "$NS"
 kubectl label ns "$NS" "policies=$NS"
@@ -64,5 +64,7 @@ kubectl create rolebinding bob:edit \
     --namespace "$NS"
 # WARN: book says 'psp-privileged', p.398
 kubectl create clusterrolebinding psp-bob --clusterrole=privileged-psp --user=bob
+kubectl label clusterrolebindings psp-bob "policies=$NS"
+
 kubectl --namespace "$NS" --user alice create -f pod-privileged.yaml && >&2 echo "ERROR this command should have failed"
 kubectl --namespace "$NS" --user bob create -f pod-privileged.yaml 
