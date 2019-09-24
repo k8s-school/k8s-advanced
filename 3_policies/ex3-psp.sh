@@ -47,12 +47,12 @@ kubectl apply -f psp-must-run-as.yaml
 # DEPLOYING A POD WITH RUN_AS USER OUTSIDE OF THE POLICY’S RANGE
 kubectl-user create --namespace "$NS" -f pod-as-user-guest.yaml && >&2 echo "ERROR this command should have failed"
 # DEPLOYING A POD WITH A CONTAINER IMAGE WITH AN OUT-OF-RANGE USER ID
-kubectl-user run --namespace "$NS" run-as-5 --image luksa/kubia-run-as-user-5 --restart Never
-sleep 5
+kubectl-user run --generator=run-pod/v1 --namespace "$NS" run-as-5 --image luksa/kubia-run-as-user-5 --restart Never
+kubectl  wait -n foo --for=condition=Ready pods run-as-5
 kubectl exec --namespace "$NS" run-as-5 -- id
 
 kubectl apply -f psp-capabilities.yaml
-kubectl-user create -f pod-add-sysadmin-capability.yaml
+kubectl-user create -f pod-add-sysadmin-capability.yaml && >&2 echo "ERROR this command should have failed"
 kubectl apply -f psp-volumes.yaml
 
 # 13.3.5 Assigning different PodSecurityPolicies to different users
@@ -65,3 +65,4 @@ kubectl create rolebinding bob:edit \
 # WARN: book says 'psp-privileged', p.398
 kubectl create clusterrolebinding psp-bob --clusterrole=privileged-psp --user=bob
 kubectl --namespace "$NS" --user alice create -f pod-privileged.yaml && >&2 echo "ERROR this command should have failed"
+kubectl --namespace "$NS" --user bob create -f pod-privileged.yaml 
