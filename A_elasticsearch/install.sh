@@ -34,13 +34,7 @@ helm install --name kibana --namespace "$NS" stable/kibana --set env.ELASTICSEAR
 POD_NAME=$(kubectl get pods --namespace "$NS" -l "app=kibana,release=kibana" -o jsonpath="{.items[0].metadata.name}")
 
 # Wait for office:task-pv-pod to be in running state
-while true
-do
-    sleep 2
-    STATUS=$(kubectl get pods -n "$NS" "$POD_NAME" -o jsonpath="{.status.phase}")
-    if [ "$STATUS" = "Running" ]; then
-        break
-    fi
-done
+kubectl wait -n "$NS" --for=condition=Ready pods "_NAME"
+
 kubectl port-forward -n "$NS" "$POD_NAME" 5601&
 # In Kibana, go to "Discover", add "logstash*" index and "@timestamp" filter, then go to "Discover"
