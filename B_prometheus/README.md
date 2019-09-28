@@ -2,7 +2,7 @@
 
 An up and running k8s cluster
 
-WARN: successfully tested on kind-v0.5.1, do not work well on GKE.
+NOTE: Successfully tested on kind-v0.5.1 (2019-09-28)
 
 # Pre-requisite: Initialize helm
 
@@ -28,10 +28,12 @@ kubectl port-forward $(kubectl get  pods --selector=app=grafana -n  monitoring -
 # GKE specific
 NODE=clus0-0
 # Open ssh tunnel on desktop to grafana
-gcloud compute ssh  --ssh-flag="-L 3000:localhost:3000" "$NODE"
+gcloud compute ssh  --ssh-flag="-nNT -L 3000:localhost:3000" "$NODE"
 ```
 
 # Ex2: Install metric-server
+
+NOTE: Successfully tested on kind-v0.5.1 (2019-09-28)
 
 Enable 'kubectl top' command and hpa.
 
@@ -39,20 +41,23 @@ Enable 'kubectl top' command and hpa.
 # Hint: https://medium.com/@waleedkhan91/how-to-configure-metrics-server-on-kubeadm-provisioned-kubernetes-cluster-f755a2ac43a2
 cd $HOME
 git clone https://github.com/kubernetes-incubator/metrics-server
-kubectl apply -f metrics-server/deploy/1.8+
 
 # Allow insecure tls, because of self-signed certificate
-fjammes15_gmail_com@clus0-0:~/metrics-server$ git diff
+fjammes@[kubectl]:~/metrics-server $ git diff
 diff --git a/deploy/1.8+/metrics-server-deployment.yaml b/deploy/1.8+/metrics-server-deployment.yaml
-index 2a8c5fe..2a16d21 100644
+index 07cb865..e2912e4 100644
 --- a/deploy/1.8+/metrics-server-deployment.yaml
 +++ b/deploy/1.8+/metrics-server-deployment.yaml
-@@ -34,4 +34,7 @@ spec:
+@@ -34,4 +34,6 @@ spec:
          volumeMounts:
          - name: tmp-dir
            mountPath: /tmp
-+        command:
-+        - /metrics-server
+-
++        args:
 +        - --kubelet-insecure-tls
++        - --kubelet-preferred-address-types=InternalIP,ExternalIP,Hostname
+
+# Create metrics-server and wait for it to work
+kubectl apply -f metrics-server/deploy/1.8+
 ```
 
