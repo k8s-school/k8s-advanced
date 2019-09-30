@@ -42,13 +42,14 @@ kubectl delete po requests-pod-3
 kubectl get po
 kubectl delete pods requests-pod-4
 
-kubectl apply -f "$KUBIA_DIR"/Chapter14/limited-pod.yaml
-sleep 5
-kubectl describe pod limited-pod
-kubectl exec -it limited-pod top
+POD="limited-pod"
+kubectl apply -f "$KUBIA_DIR"/Chapter14/"$POD".yaml
+kubectl  wait --for=condition=Ready pods "$POD"
+kubectl describe pod "$POD"
+kubectl exec -it "$POD" top
 
 # LimitRange
-kubectl apply -f $DIR/../3_authorization/manifest/local-storage.yaml
+kubectl apply -f $DIR/manifest/local-storage-class.yaml
 kubectl apply -f "$KUBIA_DIR"/Chapter14/limits.yaml
 kubectl apply -f "$KUBIA_DIR"/Chapter14/limits-pod-too-big.yaml && \
     >&2 echo "ERROR this command should have failed"
