@@ -25,7 +25,7 @@ kubectl port-forward -n monitoring prometheus-prometheus-operator-prometheus-0 9
 # login as admin with password prom-operator
 kubectl port-forward $(kubectl get  pods --selector=app=grafana -n  monitoring --output=jsonpath="{.items..metadata.name}") -n monitoring  3000 &
 
-# GKE specific
+# GCE specific
 NODE=clus0-0
 # Open ssh tunnel on desktop to grafana
 gcloud compute ssh  --ssh-flag="-nNT -L 3000:localhost:3000" "$NODE"
