@@ -4,6 +4,7 @@
 # see https://elastisys.com/2018/12/10/backup-kubernetes-how-and-why/
 
 set -e
+set -x
 
 DIR=$(cd "$(dirname "$0")"; pwd -P)
 
@@ -17,11 +18,9 @@ sudo cp -r /etc/kubernetes/pki "$BACKUP_DIR"
 # Make etcd snapshot
 #
 
-
-
-rm -f /tmp/etcd-${ETCD_VER}-linux-amd64.tar.gz
 INSTALL_DIR="/usr/local/etcd"
 if [ ! -f "$INSTALL_DIR"/etcdctl ]; then
+    rm -f /tmp/etcd-${ETCD_VER}-linux-amd64.tar.gz
     # Install etcdctl
     ETCD_VER=v3.4.1
     # choose either URL
@@ -39,16 +38,14 @@ fi
 
 export ETCDCTL_API=3
 
-mkdir -p "$HOME/backup"
-
-"$INSTALL_DIR"/etcdctl --endpoints=https://127.0.0.1:2379 \
+sudo "$INSTALL_DIR"/etcdctl --endpoints=https://127.0.0.1:2379 \
   --cacert=/etc/kubernetes/pki/etcd/ca.crt \
   --cert=/etc/kubernetes/pki/etcd/healthcheck-client.crt \
   --key=/etc/kubernetes/pki/etcd/healthcheck-client.key \
-  snapshot save "$HOME/backup/etcd-snapshot.db"
+  snapshot save "$BACKUP_DIR/etcd-snapshot.db"
 
 # Get snapshot status
-"$INSTALL_DIR"/etcdctl snapshot status "$HOME/backup/etcd-snapshot.db"
+sudo "$INSTALL_DIR"/etcdctl snapshot status "$BACKUP_DIR/etcd-snapshot.db"
 
 # Backup kubeadm-config
 sudo cp /etc/kubeadm/kubeadm-config.yaml "$BACKUP_DIR"
