@@ -15,6 +15,7 @@ sudo apt-mark hold kubeadm
 kubeadm version
 
 # On master node only
+kubectl wait --for=condition=ready node clus0-0
 sudo kubeadm upgrade plan "$LATEST_K8S"
 sudo kubeadm upgrade apply -y "$LATEST_K8S"
 
