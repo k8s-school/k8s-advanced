@@ -65,6 +65,12 @@ containerd config default > /etc/containerd/config.toml
 # Restart containerd
 systemctl restart containerd
 
+# Configure crictl client
+cat > /etc/crictl.yaml <<EOF
+runtime-endpoint: unix:///run/containerd/containerd.sock
+image-endpoint: unix:///run/containerd/containerd.sock
+EOF
+
 # Calico
 #
 curl -O -L  https://github.com/projectcalico/calicoctl/releases/download/v3.7.2/calicoctl

@@ -15,23 +15,40 @@ mkdir -p "$BACKUP_DIR"
 sudo cp -r /etc/kubernetes/pki "$BACKUP_DIR"
 
 # Make etcd snapshot
-sudo apt-get install docker-ce
-sudo docker run --rm -v "$BACKUP_DIR":/backup \
-    --network host \
-    -v /etc/kubernetes/pki/etcd:/etc/kubernetes/pki/etcd \
-    --env ETCDCTL_API=3 \
-    k8s.gcr.io/etcd-amd64:3.2.18 \
-    etcdctl --endpoints=https://127.0.0.1:2379 \
-    --cacert=/etc/kubernetes/pki/etcd/ca.crt \
-    --cert=/etc/kubernetes/pki/etcd/healthcheck-client.crt \
-    --key=/etc/kubernetes/pki/etcd/healthcheck-client.key \
-    snapshot save "/backup/etcd-snapshot.db"
+#
+
+
+
+rm -f /tmp/etcd-${ETCD_VER}-linux-amd64.tar.gz
+INSTALL_DIR="/usr/local/etcd"
+if [ ! -f "$INSTALL_DIR"/etcdctl ]; then
+    # Install etcdctl
+    ETCD_VER=v3.4.1
+    # choose either URL
+    # WARN: Google does not work on 2019-09-30
+    GOOGLE_URL=https://storage.googleapis.com/etcd
+    GITHUB_URL=https://github.com/etcd-io/etcd/releases/download
+    DOWNLOAD_URL=${GITHUB_URL}
+    sudo rm -rf "$INSTALL_DIR"
+    sudo mkdir -p "$INSTALL_DIR"
+
+    curl -L ${DOWNLOAD_URL}/${ETCD_VER}/etcd-${ETCD_VER}-linux-amd64.tar.gz -o /tmp/etcd-${ETCD_VER}-linux-amd64.tar.gz
+    sudo tar xzvf /tmp/etcd-${ETCD_VER}-linux-amd64.tar.gz -C "$INSTALL_DIR" --strip-components=1
+    rm -f /tmp/etcd-${ETCD_VER}-linux-amd64.tar.gz
+fi
+
+export ETCDCTL_API=3
+
+mkdir -p "$HOME/backup"
+
+"$INSTALL_DIR"/etcdctl --endpoints=https://127.0.0.1:2379 \
+  --cacert=/etc/kubernetes/pki/etcd/ca.crt \
+  --cert=/etc/kubernetes/pki/etcd/healthcheck-client.crt \
+  --key=/etc/kubernetes/pki/etcd/healthcheck-client.key \
+  snapshot save "$HOME/backup/etcd-snapshot.db"
 
 # Get snapshot status
-sudo docker run --rm -v "$BACKUP_DIR":/backup \
-    --env ETCDCTL_API=3 \
-    k8s.gcr.io/etcd-amd64:3.2.18 \
-    etcdctl snapshot status "/backup/etcd-snapshot.db"
+"$INSTALL_DIR"/etcdctl snapshot status "$HOME/backup/etcd-snapshot.db"
 
 # Backup kubeadm-config
 sudo cp /etc/kubeadm/kubeadm-config.yaml "$BACKUP_DIR"

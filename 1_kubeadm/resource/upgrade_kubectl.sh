@@ -3,6 +3,7 @@
 set -e
 
 DIR=$(cd "$(dirname "$0")"; pwd -P)
+. "$DIR/env.sh"
 
 # Remove debconf messages
 export TERM="linux"
@@ -18,7 +19,6 @@ sudo apt-mark hold kubeadm
 kubeadm version
 
 # On master node only
-LATEST_K8S="v1.14.1"
 sudo kubeadm upgrade plan "$LATEST_K8S"
 sudo kubeadm upgrade apply -y "$LATEST_K8S"
 

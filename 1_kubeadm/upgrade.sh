@@ -1,6 +1,7 @@
 #!/bin/bash
 
 # Upgrade an up and running k8s cluster
+# See https://kubernetes.io/docs/tasks/administer-cluster/kubeadm/kubeadm-upgrade/
 
 set -e
 
@@ -13,7 +14,7 @@ parallel --tag -- $SCP --recurse "$DIR/resource" {}:/tmp ::: "$MASTER" $NODES
 
 echo "Backup etcd"
 echo "-----------"
-$SSH "$MASTER" -- sudo 'sh /tmp/resource/backup_master.sh'
+$SSH "$MASTER" -- 'sh /tmp/resource/backup_master.sh'
 
 echo "Upgrade master node"
 echo "-------------------"
