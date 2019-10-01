@@ -15,6 +15,7 @@ mkdir -p "$BACKUP_DIR"
 sudo cp -r /etc/kubernetes/pki "$BACKUP_DIR"
 
 # Make etcd snapshot
+sudo apt-get install docker-ce
 sudo docker run --rm -v "$BACKUP_DIR":/backup \
     --network host \
     -v /etc/kubernetes/pki/etcd:/etc/kubernetes/pki/etcd \
