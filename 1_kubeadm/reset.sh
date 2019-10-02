@@ -13,5 +13,6 @@ parallel --tag -- $SCP --recurse "$DIR/resource" $USER@{}:/tmp ::: "$MASTER" $NO
 
 echo "Reset all nodes"
 echo "---------------"
-parallel -vvv --tag -- "gcloud compute ssh {} -- sh /tmp/resource/reset.sh" ::: "$MASTER" $NODES
+parallel -vvv --tag -- "$SSH {} -- sh /tmp/resource/reset.sh" ::: $NODES
+$SSH "$USER@$MASTER" -- sh /tmp/resource/reset.sh "$MASTER" 
 
