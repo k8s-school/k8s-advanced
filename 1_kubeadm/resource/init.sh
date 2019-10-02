@@ -82,6 +82,8 @@ else
     kubectl apply -f "https://cloud.weave.works/k8s/net?k8s-version=$(kubectl version | base64 | tr -d '\n')"
 fi
 
+kubectl wait --for=condition=ready nodes
+
 # Update kubeconfig with users alice and bob
 USER=alice
 kubectl config set-credentials "$USER" --token=02b50b05283e98dd0fd71db496ef01e8
