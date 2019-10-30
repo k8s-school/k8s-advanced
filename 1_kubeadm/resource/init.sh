@@ -6,6 +6,9 @@ DIR=$(cd "$(dirname "$0")"; pwd -P)
 
 usage() {
     cat << EOD
+
+Initialize k8s master with kubeadm
+
 Usage: $(basename "$0") [options]
 Available options:
   -p            Install POLICY

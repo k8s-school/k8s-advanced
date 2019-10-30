@@ -36,7 +36,7 @@ kubectl apply -f "$DIR/manifest/local-storage.yaml"
 # see https://kubernetes.io/docs/concepts/storage/volumes/#local
 # WARN: Directory kube-node-1:/data/disk1, must exist, 
 # for next exercice, create also kube-node-1:/data/disk2
-NODE="kube-node-1"
+NODE="kind-worker"
 cat <<EOF >/tmp/pv-1.yaml
 apiVersion: v1
 kind: PersistentVolume

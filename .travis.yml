@@ -1,0 +1,17 @@
+sudo: required
+language: go
+dist: xenial
+
+go:
+- 1.12.7
+
+before_script:
+  - git clone --depth 1 -b "v0.5.1" --single-branch https://github.com/k8s-school/kind-travis-ci.git
+  - ./kind-travis-ci/kind/k8s-create.sh
+  - export KUBECONFIG="$(kind get kubeconfig-path --name="kind")"
+
+script:
+  - ./2_authorization/1_RBAC_sa.sh
+
+after_success:
+  - echo "Push qserv-operator image to Docker Hub"
