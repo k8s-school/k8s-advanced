@@ -12,6 +12,7 @@ before_script:
 
 script:
   - ./2_authorization/1_RBAC_sa.sh
+  - ./2_authorization/2_RBAC_role.sh
 
 after_success:
   - echo "Push qserv-operator image to Docker Hub"
