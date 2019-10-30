@@ -4,11 +4,11 @@ set -e
 
 DIR=$(cd "$(dirname "$0")"; pwd -P)
 
-FILES=$DIR/*.sh
+FILES=$1/*.sh
 for f in $FILES
 do
-  echo "---------------------"
+  echo "------------------------------------------"
   echo "Processing $f"
-  echo "---------------------"
+  echo "------------------------------------------"
   sh -c "$f"
 done
