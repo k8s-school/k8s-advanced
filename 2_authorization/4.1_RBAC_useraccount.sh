@@ -12,11 +12,14 @@ DIR=$(cd "$(dirname "$0")"; pwd -P)
 KIND_CLUSTER_NAME="kind"
 KIND_CONTEXT="kubernetes-admin@kind"
 # WARN: Directory kind-worker:/data/disk2, must exist
+
 # on kind run:
-# docker exec -it -- kind-worker mkdir -p /data/disk2
-# on gcerun:
-# ssh clus0-1 -- sudo mkdir -p /data/disk2
 PV_NODE="kind-worker"
+docker exec -it -- "$PV_NODE" mkdir -p /data/disk2
+
+# on gce run:
+# PV_NODE="clus0-1"
+# ssh $PV_NODE -- sudo mkdir -p /data/disk2
 
 ORG="k8s-school"
 
@@ -103,10 +106,10 @@ kubectl config use-context employee-context
 kubectl --context=employee-context apply -f "$DIR/manifest/pvc.yaml"
 
 # Launch the nginx pod which attach the pvc
-kubectl apply -f https://k8s.io/examples/pods/storage/pv-pod.yaml
+kubectl apply -n office -f https://k8s.io/examples/pods/storage/pv-pod.yaml
 
 # Wait for office:task-pv-pod to be in running state
-kubectl  wait --for=condition=Ready -n office pods task-pv-pod
+kubectl  wait --for=condition=Ready --timeout=-1s -n office pods task-pv-pod
 
 # Launch a command in task-pv-pod
 kubectl exec -it task-pv-pod echo "SUCCESS in lauching command in task-pv-pod"
