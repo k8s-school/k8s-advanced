@@ -4,9 +4,17 @@ set -e
 set -x
 
 NS="compute"
-NODE_1="clus0-1"
+
+# GCP specific:
+# NODE="clus0-1"
+
+NODE="kind-worker"
 
 DIR=$(cd "$(dirname "$0")"; pwd -P)
+
+KIND_CONTEXT="kubernetes-admin@kind"
+# Switch back to context kubernetes-admin@kubernetes
+kubectl config use-context "$KIND_CONTEXT"
 
 # Run on a Kubernetes cluster with LimitRange admission control plugin enable
 # see "kubernetes in action" p405
@@ -37,7 +45,7 @@ kubectl get po "$POD"
 kubectl run requests-pod-3 --generator=run-pod/v1 --image=busybox --restart Never --requests='cpu=1.5,memory=20Mi' -- dd if=/dev/zero of=/dev/null
 kubectl run requests-pod-4 --generator=run-pod/v1 --image=busybox --restart Never --requests='cpu=1.5,memory=20Mi' -- dd if=/dev/zero of=/dev/null
 kubectl describe po requests-pod-4
-kubectl describe node "$NODE_1"
+kubectl describe node "$NODE"
 kubectl delete po requests-pod-3
 kubectl get po
 kubectl delete pods requests-pod-4
