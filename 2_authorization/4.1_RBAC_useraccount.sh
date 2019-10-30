@@ -94,7 +94,7 @@ kubectl apply -f "/tmp/task-pv.yaml"
 # With employee user, create a PersistentVolumeClaim which use pv-1 in ns 'foo'
 # See https://kubernetes.io/docs/tasks/configure-pod-container/configure-persistent-volume-storage/#create-a-persistentvolumeclaim
 kubectl --context=employee-context apply -f "$DIR/manifest/pvc.yaml" || 
-    >&2 echo "ERROR to create pvc"
+    >&2 echo "EXPECTED ERROR: failed to create pvc"
 
 # Edit role-deployment-manager.yaml to enable pvc management
 kubectl apply -f "$DIR/manifest/role-deployment-manager-pvc.yaml"
@@ -119,7 +119,7 @@ kubectl config use-context "$KIND_CONTEXT"
 
 # Try to get pv using 'employee-context'
 kubectl --context=employee-context get pv || 
-    >&2 echo "ERROR to get pv"
+    >&2 echo "EXPECTED ERROR: failed to get pv"
 
 # Create a 'clusterrolebinding' between clusterrole=pv-reader and group=$ORG
 kubectl create clusterrolebinding "pv-reader-$ORG" --clusterrole=pv-reader --group="$ORG"
