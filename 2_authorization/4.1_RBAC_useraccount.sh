@@ -40,7 +40,7 @@ kubectl config set-context employee-context --cluster="$KIND_CLUSTER_NAME" --nam
     --user=employee
 
 kubectl --context=employee-context get pods || \
-    >&2 echo "ERROR to get pods"
+    >&2 echo "EXPECTER ERROR: failed to get pods"
 
 # Use 'apply' instead of 'create' to create 
 # 'role-deployment-manager' and 'rolebinding-deployment-manager'
@@ -52,11 +52,11 @@ kubectl --context=employee-context run --generator=run-pod/v1 --image bitnami/do
 kubectl --context=employee-context get pods
 
 kubectl --context=employee-context get pods --namespace=default || \
-    >&2 echo "ERROR to get pods"
+    >&2 echo "EXPECTER ERROR: failed to get pods"
 
 # With employee user, try to run a shell in a pod in ns 'office'
 kubectl --context=employee-context run --generator=run-pod/v1 -it --image=busybox shell sh || \
-    >&2 echo "ERROR to start shell"
+    >&2 echo "EXPECTER ERROR: failed to start shell"
 
 # Create a local PersistentVolume on kube-node-1:/data/disk2
 # with label "RBAC=user"
@@ -91,6 +91,8 @@ spec:
 EOF
 kubectl apply -f "/tmp/task-pv.yaml"
 
+kubectl describe pv task-pv
+
 # With employee user, create a PersistentVolumeClaim which use pv-1 in ns 'foo'
 # See https://kubernetes.io/docs/tasks/configure-pod-container/configure-persistent-volume-storage/#create-a-persistentvolumeclaim
 kubectl --context=employee-context apply -f "$DIR/manifest/pvc.yaml" || 
@@ -109,7 +111,7 @@ kubectl --context=employee-context apply -f "$DIR/manifest/pvc.yaml"
 kubectl apply -n office -f https://k8s.io/examples/pods/storage/pv-pod.yaml
 
 # Wait for office:task-pv-pod to be in running state
-kubectl  wait --for=condition=Ready --timeout=-1s -n office pods task-pv-pod
+kubectl  wait --for=condition=Ready -n office pods task-pv-pod
 
 # Launch a command in task-pv-pod
 kubectl exec -it task-pv-pod echo "SUCCESS in lauching command in task-pv-pod"
