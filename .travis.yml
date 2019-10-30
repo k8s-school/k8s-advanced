@@ -11,8 +11,8 @@ before_script:
   - export KUBECONFIG="$(kind get kubeconfig-path --name="kind")"
 
 script:
-  - ./2_authorization/1_RBAC_sa.sh
-  - ./2_authorization/2_RBAC_role.sh
+  - ./2_authorization/ci.sh
+  - ./4_computational_resources/ci.sh
 
 after_success:
   - echo "Push qserv-operator image to Docker Hub"
