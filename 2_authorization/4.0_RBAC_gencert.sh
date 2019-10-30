@@ -6,10 +6,10 @@ set -x
 DIR=$(cd "$(dirname "$0")"; pwd -P)
 
 # ~/src/k8s-school/homefs/.certs
-CERT_DIR="$DIR/../../.certs"
+CERT_DIR="$HOME/.certs"
 mkdir -p "$CERT_DIR"
 
-ORG="hpe"
+ORG="k8s-school"
 
 # Follow "Use case 1" with ns foo instead of office
 # in certificate subject CN is the use name and O the group

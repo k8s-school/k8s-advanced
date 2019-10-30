@@ -18,7 +18,7 @@ KIND_CONTEXT="kubernetes-admin@kind"
 # ssh clus0-1 -- sudo mkdir -p /data/disk2
 PV_NODE="kind-worker"
 
-ORG="hpe"
+ORG="k8s-school"
 
 # Use context 'kubernetes-admin@kind' and delete ns,pv with label "RBAC=user"
 kubectl config use-context kubernetes-admin@kind
@@ -29,6 +29,7 @@ kubectl create ns office
 kubectl label ns office "RBAC=user"
 
 CERT_DIR="$HOME/.certs"
+mkdir -p "$CERT_DIR"
 
 kubectl config set-credentials employee --client-certificate="$CERT_DIR/employee.crt" \
     --client-key="$CERT_DIR/employee.key"
