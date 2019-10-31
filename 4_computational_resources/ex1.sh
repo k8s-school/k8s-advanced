@@ -60,7 +60,12 @@ POD="limited-pod"
 kubectl apply -f "$KUBIA_DIR"/Chapter14/"$POD".yaml
 kubectl  wait --for=condition=Ready pods "$POD"
 kubectl describe pod "$POD"
-kubectl exec -it "$POD" top
+timeout 5 kubectl exec -it "$POD" top
+if [ $? -eq 124 ]; then
+    echo "Exiting from 'top' command"
+else
+    echo "WARN: 'top' has exited for unknow reason"
+fi
 
 # LimitRange
 kubectl apply -f $DIR/manifest/local-storage-class.yaml
