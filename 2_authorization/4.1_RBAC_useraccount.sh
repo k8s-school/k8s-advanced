@@ -114,6 +114,13 @@ kubectl apply -n office -f https://k8s.io/examples/pods/storage/pv-pod.yaml
 kubectl  wait --for=condition=Ready -n office pods task-pv-pod || \
     kubectl describe pod task-pv-pod
 
+
+kubectl get pods -o wide
+kubectl get nodes
+kubectl get events
+kubectl describe pod task-pv-pod
+
+
 # Launch a command in task-pv-pod
 kubectl exec -it task-pv-pod echo "SUCCESS in lauching command in task-pv-pod"
 
