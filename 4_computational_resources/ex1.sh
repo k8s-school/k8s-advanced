@@ -35,11 +35,11 @@ POD="requests-pod"
 kubectl apply -f "$KUBIA_DIR"/Chapter14/"$POD".yaml
 kubectl  wait --for=condition=Ready pods "$POD"
 
-timeout 5 kubectl exec -it "$POD" top
-if [ $? -eq 124 ]; then
-    echo "Exiting from 'top' command"
-else
+if timeout 3 kubectl exec -it "$POD" top
+then
     echo "WARN: 'top' has exited for unknow reason"
+else
+    echo "Exiting from 'top' command"
 fi
 
 # INSPECTING A NODE’S CAPACITY
@@ -60,11 +60,11 @@ POD="limited-pod"
 kubectl apply -f "$KUBIA_DIR"/Chapter14/"$POD".yaml
 kubectl  wait --for=condition=Ready pods "$POD"
 kubectl describe pod "$POD"
-timeout 5 kubectl exec -it "$POD" top
-if [ $? -eq 124 ]; then
-    echo "Exiting from 'top' command"
-else
+if timeout 3 kubectl exec -it "$POD" top
+then
     echo "WARN: 'top' has exited for unknow reason"
+else
+    echo "Exiting from 'top' command"
 fi
 
 # LimitRange
