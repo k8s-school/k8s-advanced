@@ -11,6 +11,7 @@ before_script:
   - export KUBECONFIG="$(kind get kubeconfig-path --name="kind")"
 
 script:
+  - ./ci.sh ./1_internals
   - ./ci.sh ./2_authorization
   - ./ci.sh ./4_computational_resources
 
