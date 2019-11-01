@@ -101,6 +101,8 @@ kubectl --context=employee-context apply -f "$DIR/manifest/pvc.yaml" ||
 # Edit role-deployment-manager.yaml to enable pvc management
 kubectl apply -f "$DIR/manifest/role-deployment-manager-pvc.yaml"
 
+
+# WHICH CONTEXT???? employee or admin????
 # Use context employee-context
 kubectl config use-context employee-context
 
@@ -111,14 +113,7 @@ kubectl --context=employee-context apply -f "$DIR/manifest/pvc.yaml"
 kubectl apply -n office -f https://k8s.io/examples/pods/storage/pv-pod.yaml
 
 # Wait for office:task-pv-pod to be in running state
-kubectl  wait --for=condition=Ready --timeout 90s -n office pods task-pv-pod || \
-    kubectl describe pod task-pv-pod
-
-kubectl get pods -o wide
-kubectl get pvc
-kubectl get pv
-kubectl describe pod task-pv-pod
-
+kubectl  wait --for=condition=Ready -n office pods task-pv-pod
 
 # Launch a command in task-pv-pod
 kubectl exec -it task-pv-pod echo "SUCCESS in lauching command in task-pv-pod"
