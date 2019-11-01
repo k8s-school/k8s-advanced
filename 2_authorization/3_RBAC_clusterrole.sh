@@ -46,7 +46,7 @@ metadata:
     RBAC: clusterrole
 spec:
   capacity:
-    storage: 10Gi
+    storage: 1Gi
   volumeMode: Filesystem
   accessModes:
   - ReadWriteOnce
