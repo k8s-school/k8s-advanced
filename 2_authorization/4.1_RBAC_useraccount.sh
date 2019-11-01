@@ -114,9 +114,8 @@ kubectl apply -n office -f https://k8s.io/examples/pods/storage/pv-pod.yaml
 kubectl  wait --for=condition=Ready --timeout 60s -n office pods task-pv-pod || \
     kubectl describe pod task-pv-pod
 
-
 kubectl get pods -o wide
-kubectl get nodes
+kubectl get pvc
 kubectl get events
 kubectl describe pod task-pv-pod
 
