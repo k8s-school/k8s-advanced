@@ -26,7 +26,7 @@ kubectl config set-context $(kubectl config current-context) --namespace=$NS
 
 KUBIA_DIR="/tmp/kubernetes-in-action"
 if [ ! -d "$KUBIA_DIR" ]; then
-    git clone https://github.com/luksa/kubernetes-in-action.git /tmp/kubernetes-in-action
+    git clone https://github.com/k8s-school/kubernetes-in-action.git /tmp/kubernetes-in-action
 
 fi
 

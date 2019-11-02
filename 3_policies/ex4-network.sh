@@ -66,7 +66,7 @@ kubectl exec -n network -it nginx -- netcat -q 2 -nzv $EXTERNAL_IP 80
 # Test network policies below
 KUBIA_DIR="/tmp/kubernetes-in-action"
 if [ ! -d "$KUBIA_DIR" ]; then
-    git clone https://github.com/luksa/kubernetes-in-action.git /tmp/kubernetes-in-action
+    git clone https://github.com/k8s-school/kubernetes-in-action.git /tmp/kubernetes-in-action
 
 fi
 

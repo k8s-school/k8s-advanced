@@ -21,8 +21,8 @@ kubectl label ns foo bar "RBAC=role"
 kubectl create deployment microbot --image=dontrebootme/microbot:v1 -n foo
 kubectl expose deployment microbot -n foo --type=NodePort --port=80 --name=microbot-service
 
-# Create pod using image 'luksa/kubectl-proxy', and named 'shell' in ns 'bar'
-kubectl run --generator=run-pod/v1 shell --image=luksa/kubectl-proxy -n bar
+# Create pod using image 'k8s-school/kubectl-proxy:1.15.3', and named 'shell' in ns 'bar'
+kubectl run --generator=run-pod/v1 shell --image=k8s-school/kubectl-proxy:1.15.3 -n bar
 
 # Wait for pod bar:shell to be in running state
 kubectl  wait -n bar --for=condition=Ready pods shell
@@ -38,8 +38,8 @@ done
 # so that all kubectl command are ran in ns 'foo' by default
 kubectl config set-context $(kubectl config current-context) --namespace=foo
 
-# Create pod using image 'luksa/kubectl-proxy', and named 'shell' in ns 'foo'
-kubectl run --generator=run-pod/v1 shell --image=luksa/kubectl-proxy -n foo
+# Create pod using image 'k8s-school/kubectl-proxy:1.15.3', and named 'shell' in ns 'foo'
+kubectl run --generator=run-pod/v1 shell --image=k8s-school/kubectl-proxy:1.15.3 -n foo
 
 # Wait for foo:shell to be in running state
 kubectl  wait -n foo --for=condition=Ready pods shell

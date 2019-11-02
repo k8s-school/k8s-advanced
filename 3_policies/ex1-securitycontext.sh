@@ -10,7 +10,7 @@ KIA_DIR="/tmp/kubernetes-in-action"
 
 if [ ! -d "$KIA_DIR" ]
 then
-    git clone https://github.com/luksa/kubernetes-in-action.git "$KIA_DIR"
+    git clone https://github.com/k8s-school/kubernetes-in-action.git "$KIA_DIR"
 else
     cd "$KIA_DIR"
     git pull
