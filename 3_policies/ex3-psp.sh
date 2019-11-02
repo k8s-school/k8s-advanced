@@ -47,7 +47,7 @@ kubectl apply -f psp-must-run-as.yaml
 # DEPLOYING A POD WITH RUN_AS USER OUTSIDE OF THE POLICY’S RANGE
 kubectl-user create --namespace "$NS" -f pod-as-user-guest.yaml && >&2 echo "ERROR this command should have failed"
 # DEPLOYING A POD WITH A CONTAINER IMAGE WITH AN OUT-OF-RANGE USER ID
-kubectl-user run --generator=run-pod/v1 --namespace "$NS" run-as-5 --image k8s-school/kubia-run-as-user-5 --restart Never
+kubectl-user run --generator=run-pod/v1 --namespace "$NS" run-as-5 --image luksa/kubia-run-as-user-5 --restart Never
 kubectl  wait -n "$NS" --for=condition=Ready pods run-as-5
 kubectl exec --namespace "$NS" run-as-5 -- id
 
