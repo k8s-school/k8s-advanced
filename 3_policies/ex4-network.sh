@@ -77,7 +77,7 @@ cd "$KUBIA_DIR/Chapter13"
 
 # Exercice: Secure communication between webserver and database, and test (webserver, database, external, outside)
 # Enable DNS access, see https://docs.projectcalico.org/v3.7/security/advanced-policy#5-allow-dns-egress-traffic
-kubectl label namespace kube-system name=kube-system
+kubectl label namespace kube-system name=kube-system --overwrite
 kubectl apply -n network -f $DIR/resource/allow-dns-access.yaml
 
 # Edit original file, replace app with tier
