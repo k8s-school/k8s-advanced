@@ -9,6 +9,8 @@ DIR=$(cd "$(dirname "$0")"; pwd -P)
 
 NS="network"
 
+NODE_1="clus0-1"
+
 # Run on kubeadm cluster
 # see "kubernetes in action" p391
 kubectl delete ns -l "policies=network"
@@ -59,6 +61,7 @@ PGSQL_IP=$(kubectl get pods -n network pgsql-postgresql-0 -o jsonpath='{.status.
 kubectl exec -n "$NS" -it nginx -- netcat -q 2 -nzv ${PGSQL_IP} 5432
 kubectl exec -n "$NS" -it nginx -- netcat -q 2 -zv pgsql-postgresql 5432
 kubectl exec -n "$NS" -it nginx -- netcat -q 2 -nzv $EXTERNAL_IP 80
+kubectl exec -n "$NS" -it external -- netcat -w 2 -zv www.k8s-school.fr 80
 
 # Test network policies below
 KUBIA_DIR="/tmp/kubernetes-in-action"
@@ -88,19 +91,19 @@ echo "WITH NETWORK POLICIES"
 echo "---------------------"
 kubectl exec -n "$NS" -it nginx -- netcat -q 2 -nzv ${PGSQL_IP} 5432
 kubectl exec -n "$NS" -it nginx -- netcat -q 2 -zv pgsql-postgresql 5432
-kubectl exec -n "$NS" -it nginx -- netcat -w 2 -nzv $EXTERNAL_IP 80
-kubectl exec -n "$NS" -it external -- netcat -w 2 -zv pgsql-postgresql 5432
-kubectl exec -n "$NS" -it external -- netcat -w 2 -zv www.w3.org 80
+kubectl exec -n "$NS" -it nginx -- netcat -w 2 -nzv $EXTERNAL_IP 80 && >&2 echo "ERROR this command should have failed"
+kubectl exec -n "$NS" -it external -- netcat -w 2 -zv pgsql-postgresql 5432 && >&2 echo "ERROR this command should have failed"
+kubectl exec -n "$NS" -it external -- netcat -w 2 -zv www.k8s-school.fr 80 && >&2 echo "ERROR this command should have failed"
 # Ip for www.w3.org
-kubectl exec -n "$NS" -it external -- netcat -w 2 -nzv 128.30.52.100 80
+kubectl exec -n "$NS" -it external -- netcat -w 2 -nzv 128.30.52.100 80 && >&2 echo "ERROR this command should have failed"
 
 # Exercice: open NodePort
 # - use tcpdump inside host/pod to get source IP address
 # 'tcpdump port 30657 -i any'
 NODE_PORT=$(kubectl get svc external -n network  -o jsonpath="{.spec.ports[0].nodePort}")
-curl --connect-timeout 2 http://clus0-1:${NODE_PORT}
+curl --connect-timeout 2 "http://${NODE_1}:${NODE_PORT}"
 kubectl apply -n "$NS" -f $DIR/resource/ingress-external.yaml
-curl http://clus0-1:${NODE_PORT}
+curl "http://${NODE_1}:${NODE_PORT}"
 
 # TODO: try to open NodePort with CIDR
 # May not be possible,
