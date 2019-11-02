@@ -101,7 +101,7 @@ kubectl exec -n "$NS" -it external -- netcat -w 2 -nzv 128.30.52.100 80 && >&2 e
 # - use tcpdump inside host/pod to get source IP address
 # 'tcpdump port 30657 -i any'
 NODE_PORT=$(kubectl get svc external -n network  -o jsonpath="{.spec.ports[0].nodePort}")
-curl --connect-timeout 2 "http://${NODE_1}:${NODE_PORT}"
+curl --connect-timeout 2 "http://${NODE_1}:${NODE_PORT}" && >&2 echo "ERROR this command should have failed"
 kubectl apply -n "$NS" -f $DIR/resource/ingress-external.yaml
 curl "http://${NODE_1}:${NODE_PORT}"
 
