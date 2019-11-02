@@ -73,4 +73,4 @@ kubectl-admin create rolebinding default:psp:unprivileged \
     --role=psp:unprivileged \
     --serviceaccount=psp-example:default
 kubectl  wait --for=condition=Ready pods -l app=pause -n psp-example
-kubectl-user get pods --watch
+kubectl-user get pods
