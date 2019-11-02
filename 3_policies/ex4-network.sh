@@ -57,6 +57,9 @@ sleep 10
 
 
 # then
+echo "-------------------"
+echo "NO NETWORK POLICIES"
+echo "-------------------"
 EXTERNAL_IP=$(kubectl get pods -n network external -o jsonpath='{.status.podIP}')
 PGSQL_IP=$(kubectl get pods -n network pgsql-postgresql-0 -o jsonpath='{.status.podIP}')
 kubectl exec -n network -it nginx -- netcat -q 2 -nzv ${PGSQL_IP} 5432
@@ -86,6 +89,9 @@ kubectl apply -n network -f $DIR/resource/egress-www-db.yaml
 kubectl apply -n network -f $DIR/resource/default-deny.yaml
 
 # Play and test network connections after each step
+echo "---------------------"
+echo "WITH NETWORK POLICIES"
+echo "---------------------"
 kubectl exec -n network -it nginx -- netcat -q 2 -nzv ${PGSQL_IP} 5432
 kubectl exec -n network -it nginx -- netcat -q 2 -zv pgsql-postgresql 5432
 kubectl exec -n network -it nginx -- netcat -w 2 -nzv $EXTERNAL_IP 80
