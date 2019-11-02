@@ -7,7 +7,7 @@ DIR=$(cd "$(dirname "$0")"; pwd -P)
 FILES=$1/*.sh
 for f in $FILES
 do
-  if echo "$f" | grep "-psp\.sh"; then
+  if echo "$f" | grep "\-psp\.sh"; then
       echo
       echo "-------------------------------------------------------------------"
       echo "NOT processing $f"
