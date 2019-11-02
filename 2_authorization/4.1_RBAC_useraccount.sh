@@ -113,7 +113,7 @@ kubectl --context=employee-context apply -f "$DIR/manifest/pvc.yaml"
 kubectl apply -n office -f https://k8s.io/examples/pods/storage/pv-pod.yaml
 
 # Wait for office:task-pv-pod to be in running state
-kubectl  wait --for=condition=Ready -n office pods task-pv-pod
+kubectl  wait --for=condition=Ready -n office --timeout=180s pods task-pv-pod
 
 # Launch a command in task-pv-pod
 kubectl exec -it task-pv-pod echo "SUCCESS in lauching command in task-pv-pod"

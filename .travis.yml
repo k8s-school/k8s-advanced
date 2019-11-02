@@ -14,6 +14,3 @@ script:
   - ./ci.sh ./1_internals
   - ./ci.sh ./2_authorization
   - ./ci.sh ./4_computational_resources
-
-after_success:
-  - echo "Push qserv-operator image to Docker Hub"
