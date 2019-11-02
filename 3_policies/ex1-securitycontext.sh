@@ -63,7 +63,8 @@ kubectl exec -it pod-with-defaults -- date +%T -s "12:00:00"
 POD="pod-add-settime-capability"
 kubectl apply -f "$POD.yaml"
 kubectl  wait --for=condition=Ready pods "$POD"
-kubectl exec "$POD"  -- date +%T -s "12:00:00"
+# WARN: might break the cluster
+# kubectl exec "$POD"  -- date +%T -s "12:00:00"
 
 # Dropping capabilities from a container
 kubectl exec pod-with-defaults chown guest /tmp

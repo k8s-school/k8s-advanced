@@ -8,4 +8,4 @@ spec:
     image: tutum/curl
     command: ["sleep", "9999999"]
   - name: ambassador
-    image: k8s-school/kubectl-proxy:1.15.3
+    image: k8sschool/kubectl-proxy:1.15.3
