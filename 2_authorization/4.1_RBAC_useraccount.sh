@@ -32,7 +32,6 @@ kubectl create ns office
 kubectl label ns office "RBAC=user"
 
 CERT_DIR="$HOME/.certs"
-mkdir -p "$CERT_DIR"
 
 kubectl config set-credentials employee --client-certificate="$CERT_DIR/employee.crt" \
     --client-key="$CERT_DIR/employee.key"

@@ -8,8 +8,7 @@ set -x
 
 DIR=$(cd "$(dirname "$0")"; pwd -P)
 
-kubectl delete sa -l "RBAC=sa"
-kubectl delete pod -l "RBAC=sa"
+kubectl delete sa,pod -l "RBAC=sa"
 
 # Create a service account 'foo'
 kubectl create serviceaccount foo
@@ -27,7 +26,7 @@ kubectl apply -f "/tmp/pod.yaml"
 kubectl label pod curl-custom-sa "RBAC=sa"
 
 # Wait for pod to be in running state
-kubectl  wait --for=condition=Ready pods --timeout=180s curl-custom-sa
+kubectl wait --for=condition=Ready pods --timeout=180s curl-custom-sa
 
 # Inspect the token mounted into the pod’s container(s)
 kubectl exec -it curl-custom-sa -c main \
