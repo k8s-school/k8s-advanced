@@ -1,9 +1,7 @@
-
+[<img src="http://k8s-school.fr/images/logo.svg" alt="K8s-school Logo, expertise et formation Kubernetes" height="50" />](https://k8s-school.fr)
 
 [![Build Status](https://travis-ci.org/k8s-school/k8s-advanced.svg?branch=master)](https://travis-ci.org/k8s-school/k8s-advanced)
 
-
-[<img src="http://k8s-school.fr/images/logo.svg" alt="K8s-school Logo, expertise et formation Kubernetes" height="50" />](https://k8s-school.fr)
 
 # Kubernetes advanced course
 
