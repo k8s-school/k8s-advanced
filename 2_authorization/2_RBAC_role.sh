@@ -12,7 +12,7 @@ DIR=$(cd "$(dirname "$0")"; pwd -P)
 kubectl delete ns -l RBAC=role
 
 # Create namespaces 'foo' and 'bar' and add label "RBAC=role"
-kubectl create ns foo
+kubectl create namespace foo
 kubectl create ns bar
 kubectl label ns foo bar "RBAC=role"
 

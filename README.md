@@ -8,3 +8,9 @@
 ## Slides and materials
 
 All slides are [on our website](https://www.k8s-school.fr/pdf/E_advanced-kubernetes.pdf)
+
+## Additional tools for Docker, RBAC
+
+https://github.com/wagoodman/dive
+https://www.adaltas.com/fr/2019/08/07/utilisateurs-rbac-kubernetes/
+https://github.com/aquasecurity/kubectl-who-can

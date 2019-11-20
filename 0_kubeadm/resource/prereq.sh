@@ -71,12 +71,6 @@ runtime-endpoint: unix:///run/containerd/containerd.sock
 image-endpoint: unix:///run/containerd/containerd.sock
 EOF
 
-# Calico
-#
-curl -O -L  https://github.com/projectcalico/calicoctl/releases/download/v3.7.2/calicoctl
-mv calicoctl /usr/local/bin
-chmod +x /usr/local/bin/calicoctl
-
 # Helm
 #
 HELM_VERSION=2.14.3

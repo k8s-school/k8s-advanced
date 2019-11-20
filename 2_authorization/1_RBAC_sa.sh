@@ -31,6 +31,7 @@ kubectl wait --for=condition=Ready pods --timeout=180s curl-custom-sa
 # Inspect the token mounted into the pod’s container(s)
 kubectl exec -it curl-custom-sa -c main \
     cat /var/run/secrets/kubernetes.io/serviceaccount/token
+echo
 
 # Talk to the API server with custom ServiceAccount 'foo'
 # (tip: use 'main' container inside 'curl-custom-sa' pod)
