@@ -10,7 +10,7 @@ set -x
 DIR=$(cd "$(dirname "$0")"; pwd -P)
 
 KIND_CLUSTER_NAME="kind"
-KIND_CONTEXT="kubernetes-admin@kind"
+KIND_CONTEXT="kind-kind"
 # WARN: Directory kind-worker:/data/disk2, must exist
 
 # on kind run:
@@ -24,7 +24,7 @@ docker exec -it -- "$PV_NODE" mkdir -p /data/disk2
 ORG="k8s-school"
 
 # Use context 'kubernetes-admin@kind' and delete ns,pv with label "RBAC=user"
-kubectl config use-context kubernetes-admin@kind
+kubectl config use-context "$KIND_CONTEXT" 
 kubectl delete pv,clusterrolebinding,ns -l "RBAC=user"
 
 # Create namespace 'foo' in yaml, with label "RBAC=clusterrole"

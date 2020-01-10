@@ -12,7 +12,7 @@ NODE="kind-worker"
 
 DIR=$(cd "$(dirname "$0")"; pwd -P)
 
-KIND_CONTEXT="kubernetes-admin@kind"
+KIND_CONTEXT="kind-kind"
 # Switch back to context kubernetes-admin@kubernetes
 kubectl config use-context "$KIND_CONTEXT"
 
