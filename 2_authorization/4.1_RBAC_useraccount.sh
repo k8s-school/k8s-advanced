@@ -9,8 +9,8 @@ set -x
 
 DIR=$(cd "$(dirname "$0")"; pwd -P)
 
-KIND_CLUSTER_NAME="kind"
-KIND_CONTEXT="kind-kind"
+KIND_CLUSTER_NAME="kind-kind"
+KIND_CONTEXT="$KIND_CLUSTER_NAME"
 # WARN: Directory kind-worker:/data/disk2, must exist
 
 # on kind run:
