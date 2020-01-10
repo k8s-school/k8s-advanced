@@ -10,7 +10,7 @@ sudo apt-get update -q
 
 # On whole control plane
 sudo apt-mark unhold kubeadm
-sudo apt-get install -y kubeadm="$LATEST_KUBEADM"
+sudo apt-get install -y kubeadm="$LATEST_KUBEADM" --allow-downgrades
 sudo apt-mark hold kubeadm
 kubeadm version
 
@@ -22,5 +22,5 @@ sudo kubeadm upgrade apply -y "$LATEST_K8S"
 # On whole control plane
 sudo apt-mark unhold kubelet kubectl
 sudo apt-get update -q
-sudo apt-get install -y kubelet="$LATEST_KUBEADM" kubectl="$LATEST_KUBEADM"
+sudo apt-get install -y kubelet="$LATEST_KUBEADM" kubectl="$LATEST_KUBEADM" --allow-downgrades
 sudo apt-mark hold kubelet kubectl

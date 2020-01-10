@@ -26,7 +26,7 @@ gcloud compute ssh  --ssh-flag="-nNT -L 3000:localhost:3000" "$NODE"
 
 # Ex2: Install metric-server
 
-NOTE: Successfully tested on kind-v0.5.1 (2019-09-28)
+NOTE: Successfully tested on kind-v0.6.1 (2020-01-10)
 
 Enable 'kubectl top' command and hpa.
 
@@ -36,19 +36,20 @@ cd $HOME
 git clone https://github.com/kubernetes-incubator/metrics-server
 
 # Allow insecure tls, because of self-signed certificate
-fjammes@[kubectl]:~/metrics-server $ git diff
+fjammes@[k8s-toolbox]:~/k8s-advanced/B_prometheus/metrics-server # git diff
 diff --git a/deploy/1.8+/metrics-server-deployment.yaml b/deploy/1.8+/metrics-server-deployment.yaml
-index 07cb865..e2912e4 100644
+index b84d9c3..52a2769 100644
 --- a/deploy/1.8+/metrics-server-deployment.yaml
 +++ b/deploy/1.8+/metrics-server-deployment.yaml
-@@ -34,4 +34,6 @@ spec:
-         volumeMounts:
-         - name: tmp-dir
-           mountPath: /tmp
--
-+        args:
-+        - --kubelet-insecure-tls
-+        - --kubelet-preferred-address-types=InternalIP,ExternalIP,Hostname
+@@ -33,6 +33,8 @@ spec:
+         args:
+           - --cert-dir=/tmp
+           - --secure-port=4443
++          - --kubelet-insecure-tls
++          - --kubelet-preferred-address-types=InternalIP,ExternalIP,Hostname
+         ports:
+         - name: main-port
+           containerPort: 4443
 
 # Create metrics-server and wait for it to work
 kubectl apply -f metrics-server/deploy/1.8+
