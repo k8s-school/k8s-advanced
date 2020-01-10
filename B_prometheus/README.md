@@ -2,21 +2,14 @@
 
 An up and running k8s cluster
 
-NOTE: Successfully tested on kind-v0.5.1 (2019-09-28)
-
-# Pre-requisite: Initialize helm
-
-See [script](../A_elasticsearch/helm_init.sh)
+NOTE: Successfully tested on kind-v0.6.1 (2020-01-10) and helm-v3.0.1
 
 # Ex1: Install prometheus-operator
 
-Detailed documentation is available here:
-https://itnext.io/kubernetes-monitoring-with-prometheus-in-15-minutes-8e54d1de2e13
-
 ```shell
-# on dind run: helm init
-# on kubeadm/gke see in A_elasticsearch
-helm install stable/prometheus-operator --name prometheus-operator --namespace monitoring
+kubectl create namespace monitoring
+helm repo add stable https://kubernetes-charts.storage.googleapis.com/
+helm install prometheus-operator stable/prometheus-operator --namespace monitoring
 
 # Prometheus access:
 kubectl port-forward -n monitoring prometheus-prometheus-operator-prometheus-0 9090 &

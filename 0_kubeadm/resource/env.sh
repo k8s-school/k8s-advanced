@@ -1,4 +1,5 @@
-KUBEADM_VERSION="1.15.7-00"
+KUBEADM_VERSION="1.14.10-00"
+# WARN 1.15.7 seems bugged w.r.t psp
 
 # Use:
 # apt-cache madison kubeadm

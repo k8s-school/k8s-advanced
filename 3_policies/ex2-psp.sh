@@ -13,6 +13,8 @@ kubectl delete ns,psp -l "policies=psp"
 kubectl create namespace psp-example
 kubectl label ns psp-example "policies=psp"
 kubectl create serviceaccount -n psp-example fake-user
+
+# Allow fake-user to create pods
 kubectl create rolebinding -n psp-example fake-editor --clusterrole=edit --serviceaccount=psp-example:fake-user
 
 alias kubectl-admin='kubectl -n psp-example'
@@ -32,8 +34,11 @@ spec:
       image: k8s.gcr.io/pause
 EOF
 
-kubectl-user create -f /tmp/pause.yaml ||
+if kubectl-user create -f /tmp/pause.yaml
+    >&2 echo "ERROR: User 'fake-user' should not be able to create pod"
+else
     >&2 echo "EXPECTED ERROR: User 'fake-user' cannot create pod"
+fi
 
 kubectl-user auth can-i use podsecuritypolicy/example ||
     >&2 echo "EXPECTED ERROR"
