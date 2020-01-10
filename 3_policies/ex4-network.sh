@@ -61,7 +61,7 @@ PGSQL_IP=$(kubectl get pods -n network pgsql-postgresql-0 -o jsonpath='{.status.
 kubectl exec -n "$NS" -it nginx -- netcat -q 2 -nzv ${PGSQL_IP} 5432
 kubectl exec -n "$NS" -it nginx -- netcat -q 2 -zv pgsql-postgresql 5432
 kubectl exec -n "$NS" -it nginx -- netcat -q 2 -nzv $EXTERNAL_IP 80
-kubectl exec -n "$NS" -it external -- netcat -w 2 -zv www.k8s-school.fr 80
+kubectl exec -n "$NS" -it external -- netcat -w 2 -zv www.k8s-school.fr 443
 
 # Test network policies below
 KUBIA_DIR="/tmp/kubernetes-in-action"
