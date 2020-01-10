@@ -1,9 +1,9 @@
 sudo: required
 language: go
-dist: xenial
+dist: bionic 
 
 go:
-- 1.12.7
+- 1.13.5
 
 before_script:
   - git clone --depth 1 -b "v0.6.1" --single-branch https://github.com/k8s-school/kind-travis-ci.git
