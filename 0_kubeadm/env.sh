@@ -1,3 +1,7 @@
+# DISTRIB="centos"
+DISTRIB="ubuntu"
+
+
 MASTER="clus0-0"
 NODES="clus0-1 clus0-2"
 

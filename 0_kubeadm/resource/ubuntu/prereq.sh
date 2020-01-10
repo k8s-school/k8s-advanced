@@ -3,7 +3,7 @@
 set -e
 
 DIR=$(cd "$(dirname "$0")"; pwd -P)
-. "$DIR/env.sh"
+. "$DIR/../env.sh"
 
 apt-get update -q
 

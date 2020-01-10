@@ -2,14 +2,11 @@
 
 ## Pre-requisite
 
-Get 3 nodes on GCP
+Get access to 3 Google Cloud nodes
 
 ## Create an up and running k8s cluster with PSP enabled
 
 ```shell
-WORKDIR="../1_kubeadm"
-
-. "$WORKDIR/env.sh"
-
+WORKDIR="../0_kubeadm"
 "$WORKDIR"/create.sh -p
 ```

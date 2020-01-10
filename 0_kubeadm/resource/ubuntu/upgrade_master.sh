@@ -4,9 +4,9 @@ set -e
 set -x
 
 DIR=$(cd "$(dirname "$0")"; pwd -P)
-. "$DIR/env.sh"
+. "$DIR/../env.sh"
 
-sudo cp -f $DIR/kubeadm-config.yaml /etc/kubeadm
+sudo apt-get update -q
 
 # On whole control plane
 sudo apt-mark unhold kubeadm

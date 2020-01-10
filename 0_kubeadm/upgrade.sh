@@ -3,7 +3,7 @@
 # Upgrade an up and running k8s cluster
 # See https://kubernetes.io/docs/tasks/administer-cluster/kubeadm/kubeadm-upgrade/
 
-set -e
+set -eux
 
 DIR=$(cd "$(dirname "$0")"; pwd -P)
 . "$DIR/env.sh"
@@ -18,7 +18,7 @@ $SSH "$MASTER" -- 'sh /tmp/resource/backup_master.sh'
 
 echo "Upgrade master node"
 echo "-------------------"
-$SSH "$MASTER" -- sudo 'sh /tmp/resource/upgrade_master.sh'
+$SSH "$MASTER" -- sudo "sh /tmp/resource/$DISTRIB/upgrade_master.sh"
 
 echo "Upgrade worker nodes"
 echo "--------------------"
@@ -27,7 +27,7 @@ echo "--------------------"
 # WORKER_NODES=$(kubectl get nodes --selector="! node-role.kubernetes.io/master" -o name)
 for node in $NODES; do
     $SSH "$MASTER" -- kubectl drain "$node" --ignore-daemonsets
-    $SSH "$node" -- sh /tmp/resource/upgrade_worker.sh
+    $SSH "$node" -- "sh /tmp/resource/$DISTRIB/upgrade_worker.sh"
     $SSH "$MASTER" -- kubectl uncordon "$node"
 done
 

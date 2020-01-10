@@ -1,16 +1,12 @@
 #!/bin/sh
 
 set -e
+set -x
 
 DIR=$(cd "$(dirname "$0")"; pwd -P)
-. "$DIR/env.sh"
+. "$DIR/../env.sh"
 
-# Remove debconf messages
-export TERM="linux"
-
-# Get latest kubeadm version
-sudo apt-get update -q
-LATEST_KUBEADM=$(apt-cache madison kubeadm | head -n 1 | cut -d'|' -f2 | xargs)
+sudo cp -f $DIR/kubeadm-config.yaml /etc/kubeadm
 
 # On whole control plane
 sudo apt-mark unhold kubeadm
@@ -19,11 +15,12 @@ sudo apt-mark hold kubeadm
 kubeadm version
 
 # On master node only
+kubectl wait --for=condition=ready node clus0-0
 sudo kubeadm upgrade plan "$LATEST_K8S"
 sudo kubeadm upgrade apply -y "$LATEST_K8S"
 
 # On whole control plane
-sudo apt-mark unhold kubelet
+sudo apt-mark unhold kubelet kubectl
 sudo apt-get update -q
-sudo apt-get install -y kubelet="$LATEST_KUBEADM"
-sudo apt-mark hold kubelet
+sudo apt-get install -y kubelet="$LATEST_KUBEADM" kubectl="$LATEST_KUBEADM"
+sudo apt-mark hold kubelet kubectl

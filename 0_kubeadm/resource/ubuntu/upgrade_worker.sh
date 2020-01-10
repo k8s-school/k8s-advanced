@@ -5,7 +5,9 @@
 set -e
 
 DIR=$(cd "$(dirname "$0")"; pwd -P)
-. "$DIR/env.sh"
+. "$DIR/../env.sh"
+
+sudo apt-get update -q
 
 sudo kubeadm upgrade node config --kubelet-version "$LATEST_K8S"
 

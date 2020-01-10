@@ -62,7 +62,8 @@ spec:
         privileged: true
 EOF
 
-kubectl-user create -f /tmp/priv-pause.yaml && >&2 echo "ERROR this command should have failed"
+kubectl-user create -f /tmp/priv-pause.yaml ||
+    >&2 echo "EXPECTED ERROR: User 'fake-user' cannot create privileged container"
 
 kubectl-user delete pod pause
 

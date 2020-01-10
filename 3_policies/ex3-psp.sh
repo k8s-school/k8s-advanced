@@ -39,20 +39,23 @@ cd "$KUBIA_DIR"/Chapter13
 
 # 13.3.1 Introducing the PodSecurityPolicy resource
 kubectl apply -f pod-security-policy.yaml
-kubectl-user create --namespace "$NS" -f pod-privileged.yaml && >&2 echo "ERROR this command should have failed"
+kubectl-user create --namespace "$NS" -f pod-privileged.yaml ||
+    >&2 echo "EXPECTED ERROR: User 'alice' cannot create privileged pod"
 
 # 13.3.2 Understanding runAsUser, fsGroup, and supplementalGroups
 # policies
 kubectl apply -f psp-must-run-as.yaml
 # DEPLOYING A POD WITH RUN_AS USER OUTSIDE OF THE POLICY’S RANGE
-kubectl-user create --namespace "$NS" -f pod-as-user-guest.yaml && >&2 echo "ERROR this command should have failed"
+kubectl-user create --namespace "$NS" -f pod-as-user-guest.yaml ||
+    >&2 echo "EXPECTED ERROR: Cannot deploy a pod with 'run_as user' outside of the policy’s range"
 # DEPLOYING A POD WITH A CONTAINER IMAGE WITH AN OUT-OF-RANGE USER ID
 kubectl-user run --generator=run-pod/v1 --namespace "$NS" run-as-5 --image luksa/kubia-run-as-user-5 --restart Never
 kubectl  wait -n "$NS" --for=condition=Ready pods run-as-5
 kubectl exec --namespace "$NS" run-as-5 -- id
 
 kubectl apply -f psp-capabilities.yaml
-kubectl-user create -f pod-add-sysadmin-capability.yaml && >&2 echo "ERROR this command should have failed"
+kubectl-user create -f pod-add-sysadmin-capability.yaml ||
+    >&2 echo "EXPECTED ERROR: Cannot deploy a pod with capability 'sysadmin'"
 kubectl apply -f psp-volumes.yaml
 
 # 13.3.5 Assigning different PodSecurityPolicies to different users
@@ -66,5 +69,6 @@ kubectl create rolebinding bob:edit \
 kubectl create clusterrolebinding psp-bob --clusterrole=privileged-psp --user=bob
 kubectl label clusterrolebindings psp-bob "policies=$NS"
 
-kubectl --namespace "$NS" --user alice create -f pod-privileged.yaml && >&2 echo "ERROR this command should have failed"
+kubectl --namespace "$NS" --user alice create -f pod-privileged.yaml ||
+    >&2 echo "EXPECTED ERROR: User 'alice' cannot create a privileged pod"
 kubectl --namespace "$NS" --user bob create -f pod-privileged.yaml 
