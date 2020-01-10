@@ -32,9 +32,11 @@ spec:
       image: k8s.gcr.io/pause
 EOF
 
-kubectl-user create -f /tmp/pause.yaml && >&2 echo "ERROR this command should have failed"
+kubectl-user create -f /tmp/pause.yaml ||
+    >&2 echo "EXPECTED ERROR: User 'fake-user' cannot create pod"
 
-kubectl-user auth can-i use podsecuritypolicy/example && >&2 echo "ERROR this command should have failed"
+kubectl-user auth can-i use podsecuritypolicy/example ||
+    >&2 echo "EXPECTED ERROR"
 
 kubectl-admin create role psp:unprivileged \
     --verb=use \
