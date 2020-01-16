@@ -8,6 +8,7 @@ set -x
 
 DIR=$(cd "$(dirname "$0")"; pwd -P)
 
+kubectl  wait --for=condition=Ready pods -l component=etcd,tier=control-plane
 kubectl get pods -n kube-system
 ETCD_POD=$(kubectl get pods -n kube-system -l component=etcd,tier=control-plane -o jsonpath='{.items[0].metadata.name}')
 
