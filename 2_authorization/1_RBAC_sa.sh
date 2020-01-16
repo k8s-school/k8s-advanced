@@ -1,7 +1,6 @@
 #!/bin/sh
 
-set -e
-set -x
+set -ex
 
 # RBAC sa
 # see "kubernetes in action" p346
@@ -21,7 +20,7 @@ kubectl describe secrets "$FOO_TOKEN"
 # Create a pod using this service account
 # use manifest/pod.yaml, and patch it
 kubectl patch -f "$DIR/manifest/pod.yaml" \
-    -p '{"spec":{"serviceAccount":"foo"}}' --local  -o yaml > /tmp/pod.yaml
+    -p '{"spec":{"serviceAccountName":"foo"}}' --local  -o yaml > /tmp/pod.yaml
 kubectl apply -f "/tmp/pod.yaml"
 kubectl label pod curl-custom-sa "RBAC=sa"
 

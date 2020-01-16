@@ -35,6 +35,7 @@ spec:
 EOF
 
 if kubectl-user create -f /tmp/pause.yaml
+then
     >&2 echo "ERROR: User 'fake-user' should not be able to create pod"
 else
     >&2 echo "EXPECTED ERROR: User 'fake-user' cannot create pod"
