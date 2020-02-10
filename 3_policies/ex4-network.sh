@@ -9,7 +9,8 @@ DIR=$(cd "$(dirname "$0")"; pwd -P)
 
 NS="network"
 
-NODE_1="clus0-1"
+NODE_1=$(kubectl get nodes --selector="! node-role.kubernetes.io/master" \
+    -o=jsonpath='{.items[0].metadata.name}')
 
 # Run on kubeadm cluster
 # see "kubernetes in action" p391
@@ -19,23 +20,13 @@ kubectl label ns network "policies=network"
 
 # Exercice: Install one postgresql pod with helm and add label "tier:database" to master pod
 # Disable data persistence
-
-if ! kubectl get deployments -n kube-system tiller-deploy;
-then
-    helm init
-    kubectl create serviceaccount --namespace kube-system tiller
-    kubectl create clusterrolebinding tiller-cluster-rule --clusterrole=cluster-admin --serviceaccount=kube-system:tiller
-    kubectl patch deploy --namespace kube-system tiller-deploy -p '{"spec":{"template":{"spec":{"serviceAccount":"tiller"}}}}'
-    helm init --service-account tiller --upgrade
-else
-    helm delete --purge pgsql || echo "WARN pgsql release not found"
-fi
+helm delete --purge pgsql || echo "WARN pgsql release not found"
 
 helm repo update
-helm search postgresql
+helm search repo postgresql
 kubectl apply -f $DIR/../0_kubeadm/resource/psp/default-psp-with-rbac.yaml
 sleep 10
-helm install --namespace "$NS" --name pgsql stable/postgresql --set master.podLabels.tier="database",persistence.enabled="false"
+helm install --namespace "$NS" pgsql stable/postgresql --set master.podLabels.tier="database",persistence.enabled="false"
 
 # Install nginx pods
 kubectl run -n "$NS" --generator=run-pod/v1 external --image=nginx -l "app=external"
@@ -51,8 +42,7 @@ kubectl exec -n "$NS" -it nginx -- \
     sh -c "apt-get update && apt-get install -y dnsutils inetutils-ping netcat net-tools procps tcpdump"
 sleep 10
 
-
-# then
+# then check what happen with no network policies defined
 echo "-------------------"
 echo "NO NETWORK POLICIES"
 echo "-------------------"
