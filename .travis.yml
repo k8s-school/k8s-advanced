@@ -12,4 +12,5 @@ before_script:
 script:
   - ./ci.sh ./1_internals
   - ./ci.sh ./2_authorization
+  - ./3_policies/ex4-network.sh
   - ./ci.sh ./4_computational_resources
