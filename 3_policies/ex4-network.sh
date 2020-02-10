@@ -9,8 +9,8 @@ DIR=$(cd "$(dirname "$0")"; pwd -P)
 
 NS="network"
 
-NODE_1=$(kubectl get nodes --selector="! node-role.kubernetes.io/master" \
-    -o=jsonpath='{.items[0].metadata.name}')
+NODE1_IP=$(kubectl get nodes --selector="! node-role.kubernetes.io/master" \
+    -o=jsonpath='{.items[0].status.addresses[0].address}')
 
 # Run on kubeadm cluster
 # see "kubernetes in action" p391
@@ -91,9 +91,9 @@ kubectl exec -n "$NS" -it external -- netcat -w 2 -nzv 128.30.52.100 80 && >&2 e
 # - use tcpdump inside host/pod to get source IP address
 # 'tcpdump port 30657 -i any'
 NODE_PORT=$(kubectl get svc external -n network  -o jsonpath="{.spec.ports[0].nodePort}")
-curl --connect-timeout 2 "http://${NODE_1}:${NODE_PORT}" && >&2 echo "ERROR this command should have failed"
+curl --connect-timeout 2 "http://${NODE1_IP}:${NODE_PORT}" && >&2 echo "ERROR this command should have failed"
 kubectl apply -n "$NS" -f $DIR/resource/ingress-external.yaml
-curl "http://${NODE_1}:${NODE_PORT}"
+curl "http://${NODE1_IP}:${NODE_PORT}"
 
 # TODO: try to open NodePort with CIDR
 # May not be possible,
