@@ -23,7 +23,7 @@ kubectl delete -f samples/bookinfo/networking/virtual-service-all-v1.yaml
 
 Delete the routing rules and terminate the application pods
 ```
-. istio-1.2.4/samples/bookinfo/platform/kube/cleanup.sh
+. istio-1.4.4/samples/bookinfo/platform/kube/cleanup.sh
 ```
 Confirm shutdown. There should be no virtualservices (vs)   or destinationrules (dr) or gateway (gw) or pods (po).
 ```

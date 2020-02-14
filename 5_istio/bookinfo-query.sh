@@ -1,5 +1,8 @@
 #!/bin/bash
 
+echo -e "\e[1;31mQUERYING BOOKINFO\e[0m"
+echo -e "\e[1;31m-----------------\e[0m"
+
 # See https://istio.io/docs/tasks/traffic-management/ingress/ingress-control/#determining-the-ingress-ip-and-ports
 
 set -euxo pipefail
@@ -24,9 +27,11 @@ curl  -sIv "${GATEWAY_URL}" >> "$LOG_FILE"
 while :;
 do echo "====================================" >> "$LOG_FILE"
   sleep 1
-  for i in $(seq 1 100); 
+  for i in {1..100}; 
   do
-    curl -s "$GATEWAY_URL" | grep 'font color' | uniq >> "$LOG_FILE"
-    # curl -s -o /dev/null "$GATEWAY_URL"
+    if ! curl -s "$GATEWAY_URL" | grep 'font color' | uniq >> "$LOG_FILE"
+    then
+        echo "No star found" >> "$LOG_FILE"
+    fi
   done
 done

@@ -22,14 +22,8 @@ kubectl expose service kiali --type=NodePort --name=kiali-svc --namespace istio-
 ```
 kubectl get svc kiali-svc -n istio-system -o 'jsonpath={.spec.ports[0].nodePort}'
 ```
-Kiali users need to be identified using a username and password to login into Kiali. Create a secret for Kiali whose username is "admin" and passphrase is "admin"
-```
-kubectl create secret generic kiali -n istio-system --from-literal "username=admin" --from-literal "passphrase=admin"
-```
-Edit Kiali ConfigMap and set Grafana URL **url: http://grafana:3000**
-```
-kubectl -n istio-system edit cm kiali
-```
+Kiali users need to be identified using a username and password to login into Kiali, username is "admin" and passphrase is "admin"
+
 # Grafana dashboards
 
 Check grafana service type
@@ -43,7 +37,7 @@ grafana   ClusterIP   10.111.245.166   <none>        3000/TCP   3h26m
 ```
 kubectl -n istio-system port-forward $(kubectl -n istio-system get pod -l app=grafana -o jsonpath='{.items[0].metadata.name}') 3000:3000
 ```
-Then visit http://localhost:3000/dashboard/db/istio-mesh-dashboard in your web browser.
+Then visit http://localhost:3000 in your web browser.
 
 **Option 2: Expose Grafana with a service type NodePort**
 ```
@@ -55,7 +49,7 @@ export NODE_IP=$(kubectl get po -l istio=ingressgateway -n istio-system -o jsonp
 
 export NODE_PORT=$(kubectl get svc grafana-svc -n istio-system -o 'jsonpath={.spec.ports[0].nodePort}')
 
-echo http://$NODE_IP:$NODE_PORT/dashboard/db/istio-mesh-dashboard
+echo http://$NODE_IP:$NODE_PORT
 ```
 # Tracing with Jaeger
 
