@@ -57,7 +57,7 @@ echo http://$NODE_IP:$NODE_PORT
 ```
 kubectl -n istio-system port-forward $(kubectl -n istio-system get pod -l app=jaeger -o jsonpath='{.items[0].metadata.name}') 15032:16686
 ```
-Open your browser to http://localhost:15032.
+Open your browser at http://localhost:15032.
 
 **Option 2: Expose Jaeger with a service type NodePort**
 ```

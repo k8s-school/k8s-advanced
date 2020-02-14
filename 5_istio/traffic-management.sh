@@ -1,10 +1,11 @@
 #!/bin/bash
 
-set -e
+# See https://istio.io/docs/tasks/traffic-management/request-routing/
 
-ISTIO_VERSION=1.2.5
+set -euo pipefail
 
 DIR=$(cd "$(dirname "$0")"; pwd -P)
+. "$DIR"/env.sh
 
 ISTIO_DIR="$DIR/istio-${ISTIO_VERSION}"
 
@@ -27,8 +28,10 @@ wait_key()
 
 echo "Route all traffic to v1 services, see http://localhost:20001/kiali"
 set -x
-kubectl apply -f "$ISTIO_DIR"/samples/bookinfo/networking/destination-rule-reviews.yaml
+kubectl apply -f "$ISTIO_DIR"/samples/bookinfo/networking/destination-rule-all.yaml
+kubectl get destinationrules -o yaml
 kubectl apply -f "$ISTIO_DIR"/samples/bookinfo/networking/virtual-service-all-v1.yaml
+kubectl get virtualservices -o yaml
 # Example below works fine
 # kubectl apply -f "$ISTIO_DIR"/samples/bookinfo/networking/virtual-service-reviews-v3.yaml
 

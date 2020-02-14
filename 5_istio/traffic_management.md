@@ -4,7 +4,7 @@
 
 Redirect all the traffic to reviews v1
 ```
-kubectl apply -f samples/bookinfo/networking/destination-rule-reviews.yaml
+kubectl apply -f samples/bookinfo/networking/destination-rule-all.yaml
 kubectl apply -f samples/bookinfo/networking/virtual-service-all-v1.yaml
 ```
 
@@ -23,7 +23,7 @@ kubectl delete -f samples/bookinfo/networking/virtual-service-all-v1.yaml
 
 Delete the routing rules and terminate the application pods
 ```
-. istio-1.4.4/samples/bookinfo/platform/kube/cleanup.sh
+. istio-1.4.4/samples/bookinfo/platform/kube/cleanup.sh -n bookinfo
 ```
 Confirm shutdown. There should be no virtualservices (vs)   or destinationrules (dr) or gateway (gw) or pods (po).
 ```

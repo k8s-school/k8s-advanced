@@ -5,12 +5,10 @@
 
 set -euxo pipefail
 
-NS="istio-system"
-
 DIR=$(cd "$(dirname "$0")"; pwd -P)
-
 . "$DIR"/env.sh
 
+NS="istio-system"
 
 echo "Download istio (version $ISTIO_VERSION)"
 if [ ! -d "$ISTIO_DIR" ]; then
