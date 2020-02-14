@@ -20,10 +20,8 @@ kubectl label ns network "policies=network"
 
 # Exercice: Install one postgresql pod with helm and add label "tier:database" to master pod
 # Disable data persistence
-helm delete --purge pgsql || echo "WARN pgsql release not found"
+helm delete pgsql || echo "WARN pgsql release not found"
 
-helm repo update
-helm search repo postgresql
 kubectl apply -f $DIR/../0_kubeadm/resource/psp/default-psp-with-rbac.yaml
 sleep 10
 helm install --namespace "$NS" pgsql stable/postgresql --set master.podLabels.tier="database",persistence.enabled="false"
