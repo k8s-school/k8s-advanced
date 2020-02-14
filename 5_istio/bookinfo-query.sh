@@ -4,9 +4,12 @@
 
 set -euxo pipefail
 
+NODE1=$(kubectl get nodes --selector="! node-role.kubernetes.io/master" \
+    -o=jsonpath='{.items[0].metadata.name}')
+
 export INGRESS_PORT=$(kubectl -n istio-system get service istio-ingressgateway -o jsonpath='{.spec.ports[?(@.name=="http2")].nodePort}')
 export SECURE_INGRESS_PORT=$(kubectl -n istio-system get service istio-ingressgateway -o jsonpath='{.spec.ports[?(@.name=="https")].nodePort}')
-export INGRESS_HOST=$(kubectl get nodes kind-worker -o jsonpath='{ .status.addresses[?(@.type=="InternalIP")].address }')
+export INGRESS_HOST=$(kubectl get nodes "$NODE1" -o jsonpath='{ .status.addresses[?(@.type=="InternalIP")].address }')
 GATEWAY_URL="http://$INGRESS_HOST:$INGRESS_PORT/productpage"
 
 LOG_FILE="/tmp/query.log"
