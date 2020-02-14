@@ -1,22 +1,15 @@
 #!/bin/bash
 
-set -e
+set -euxo pipefail
 
 DIR=$(cd "$(dirname "$0")"; pwd -P)
 
-FILES=$1/*.sh
+FILES=$DIR/*.sh
 for f in $FILES
 do
-  if echo "$f" | grep "\-psp\.sh"; then
-      echo
-      echo "-------------------------------------------------------------------"
-      echo "NOT processing $f"
-      echo "-------------------------------------------------------------------"
-  else
       echo
       echo "-------------------------------------------------------------------"
       echo "Processing $f"
       echo "-------------------------------------------------------------------"
       sh -c "$f"
-  fi
 done

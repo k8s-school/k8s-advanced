@@ -10,7 +10,8 @@ before_script:
   - ./kind-travis-ci/kind/k8s-create.sh -c
 
 script:
-  - ./ci.sh ./1_internals
-  - ./ci.sh ./2_authorization
-  - ./3_policies/ex4-network.sh
-  - ./ci.sh ./4_computational_resources
+  - ./1_internals/ci.sh
+  - ./2_authorization/ci.sh
+  - ./3_policies/ci.sh
+  - ./4_computational_resources/ci.sh
+  - ./5_istio/ci.sh
