@@ -22,6 +22,9 @@ kubectl label ns network "policies=network"
 # Disable data persistence
 helm delete pgsql || echo "WARN pgsql release not found"
 
+helm repo add stable https://kubernetes-charts.storage.googleapis.com
+helm repo update
+
 kubectl apply -f $DIR/../0_kubeadm/resource/psp/default-psp-with-rbac.yaml
 sleep 10
 helm install --namespace "$NS" pgsql stable/postgresql --set master.podLabels.tier="database",persistence.enabled="false"
