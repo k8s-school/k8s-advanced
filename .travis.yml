@@ -14,4 +14,3 @@ script:
   - ./2_authorization/ci.sh
   - ./3_policies/ci.sh
   - ./4_computational_resources/ci.sh
-  - ./5_istio/ci.sh
