@@ -1,5 +1,5 @@
 ISTIO_VERSION="1.4.4"
-ISTIO_DIR="$DIR/istio-${ISTIO_VERSION}"
+ISTIO_DIR="/tmp/istio-${ISTIO_VERSION}"
 
 export PATH="$ISTIO_DIR/bin:$PATH"
 

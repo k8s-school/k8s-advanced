@@ -12,6 +12,7 @@ NS="istio-system"
 
 echo "Download istio (version $ISTIO_VERSION)"
 if [ ! -d "$ISTIO_DIR" ]; then
+    cd /tmp
     curl -L https://git.io/getLatestIstio | ISTIO_VERSION="$ISTIO_VERSION" sh -
 fi
 cd "$ISTIO_DIR"
