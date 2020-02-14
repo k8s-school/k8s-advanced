@@ -6,15 +6,9 @@ go:
 - 1.13.5
 
 before_script:
-  - git clone --depth 1 -b "v0.7.0-1" --single-branch https://github.com/k8s-school/kind-travis-ci.git
+  - git clone --depth 1 -b "v0.7.0-2" --single-branch https://github.com/k8s-school/kind-travis-ci.git
   - ./kind-travis-ci/kind/k8s-create.sh -c
-  - HELM_VERSION="3.0.2" && wget -O /tmp/helm.tgz \
-    https://get.helm.sh/helm-v${HELM_VERSION}-linux-amd64.tar.gz && \
-    cd /tmp && \
-    tar zxvf /tmp/helm.tgz && \
-    rm /tmp/helm.tgz && \
-    chmod +x /tmp/linux-amd64/helm && \
-    mv /tmp/linux-amd64/helm /usr/local/bin/helm
+  - ./kind-travis-ci/helm-install.sh
 
 script:
   - ./1_internals/ci.sh
