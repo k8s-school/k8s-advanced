@@ -37,7 +37,7 @@ git clone https://github.com/kubernetes-incubator/metrics-server
 
 # Allow insecure tls, because of self-signed certificate
 fjammes@[k8s-toolbox]:~/k8s-advanced/B_prometheus/metrics-server # git diff
-diff --git a/deploy/1.8+/metrics-server-deployment.yaml b/deploy/1.8+/metrics-server-deployment.yaml
+diff --git a/deploy/kubernetes/metrics-server-deployment.yaml b/deploy/kubernetes/metrics-server-deployment.yaml
 index b84d9c3..52a2769 100644
 --- a/deploy/1.8+/metrics-server-deployment.yaml
 +++ b/deploy/1.8+/metrics-server-deployment.yaml
@@ -52,6 +52,6 @@ index b84d9c3..52a2769 100644
            containerPort: 4443
 
 # Create metrics-server and wait for it to work
-kubectl apply -f metrics-server/deploy/1.8+
+kubectl apply -f metrics-server/deploy/kubernetes
 ```
 
