@@ -16,7 +16,7 @@ kubectl port-forward -n monitoring prometheus-prometheus-operator-prometheus-0 9
 
 # Grafana access:
 # login as admin with password prom-operator
-kubectl port-forward $(kubectl get  pods --selector=app=grafana -n  monitoring --output=jsonpath="{.items..metadata.name}") -n monitoring  3000 &
+kubectl port-forward $(kubectl get  pods --selector=app.kubernetes.io/name=grafana -n  monitoring --output=jsonpath="{.items..metadata.name}") -n monitoring  3000 &
 
 # GCE specific
 NODE=clus0-0
