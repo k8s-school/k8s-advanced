@@ -36,7 +36,7 @@ cd $HOME
 git clone https://github.com/kubernetes-incubator/metrics-server
 
 # Allow insecure tls, because of self-signed certificate
-fjammes@[k8s-toolbox]:~/k8s-advanced/B_prometheus/metrics-server # git diff
+fjammes@[k8s-toolbox]:~/metrics-server # git diff
 diff --git a/deploy/kubernetes/metrics-server-deployment.yaml b/deploy/kubernetes/metrics-server-deployment.yaml
 index b84d9c3..52a2769 100644
 --- a/deploy/1.8+/metrics-server-deployment.yaml
