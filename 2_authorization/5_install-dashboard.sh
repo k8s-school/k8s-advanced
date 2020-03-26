@@ -1,8 +1,6 @@
+#!/bin/bash
 
-#!/bin/sh
-
-set -e
-set -x
+set -euxo pipefail
 
 # Install dashboard and set up RBAC
 # see See https://github.com/kubernetes/dashboard
@@ -14,7 +12,7 @@ kubectl delete ns -l "RBAC=dashboard"
 kubectl create ns kubernetes-dashboard
 kubectl label ns kubernetes-dashboard "RBAC=dashboard"
 
-kubectl apply -f https://raw.githubusercontent.com/kubernetes/dashboard/v1.10.1/src/deploy/recommended/kubernetes-dashboard.yaml
+kubectl apply -f https://raw.githubusercontent.com/kubernetes/dashboard/v2.0.0-rc6/aio/deploy/recommended.yaml
 kubectl apply -f "$DIR"/manifest/sa_dashboard.yaml
 
 echo "Get token"
@@ -24,4 +22,4 @@ kubectl -n kubernetes-dashboard describe secret $(kubectl -n kubernetes-dashboar
 echo "Run:\n \
 $ kubectl proxy \n\
 Now access Dashboard at: \n\
-http://localhost:8001/api/v1/namespaces/kube-system/services/https:kubernetes-dashboard:/proxy/."
+http://localhost:8001/api/v1/namespaces/kubernetes-dashboard/services/https:kubernetes-dashboard:/proxy/."
