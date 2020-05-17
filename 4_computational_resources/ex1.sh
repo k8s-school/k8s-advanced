@@ -35,7 +35,7 @@ POD="requests-pod"
 kubectl apply -f "$KUBIA_DIR"/Chapter14/"$POD".yaml
 kubectl  wait --for=condition=Ready pods "$POD"
 
-if timeout 3 --foreground kubectl exec -it "$POD" top
+if timeout 3 --foreground kubectl exec -it "$POD" -- top
 then
     echo "WARN: 'top' has exited for unknow reason"
 else
@@ -60,7 +60,7 @@ POD="limited-pod"
 kubectl apply -f "$KUBIA_DIR"/Chapter14/"$POD".yaml
 kubectl  wait --for=condition=Ready pods "$POD"
 kubectl describe pod "$POD"
-if timeout 3 kubectl exec -it "$POD" top
+if timeout 3 kubectl exec -it "$POD" -- top
 then
     echo "WARN: 'top' has exited for unknow reason"
 else
