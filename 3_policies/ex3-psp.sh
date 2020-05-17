@@ -3,6 +3,8 @@
 set -e
 set -x
 
+DIR=$(cd "$(dirname "$0")"; pwd -P)
+
 # Run on kubeadm cluster
 # see "kubernetes in action" p391
 
@@ -38,13 +40,13 @@ kubectl-user run --restart=Never -it ubuntu --image=ubuntu id --restart Never
 cd "$KUBIA_DIR"/Chapter13
 
 # 13.3.1 Introducing the PodSecurityPolicy resource
-kubectl apply -f pod-security-policy.yaml
+kubectl apply -f "$DIR"/resource/pod-security-policy.yaml
 kubectl-user create --namespace "$NS" -f pod-privileged.yaml ||
     >&2 echo "EXPECTED ERROR: User 'alice' cannot create privileged pod"
 
 # 13.3.2 Understanding runAsUser, fsGroup, and supplementalGroups
 # policies
-kubectl apply -f psp-must-run-as.yaml
+kubectl apply -f "$DIR"/resource/psp-must-run-as.yaml
 # DEPLOYING A POD WITH RUN_AS USER OUTSIDE OF THE POLICY’S RANGE
 kubectl-user create --namespace "$NS" -f pod-as-user-guest.yaml ||
     >&2 echo "EXPECTED ERROR: Cannot deploy a pod with 'run_as user' outside of the policy’s range"
@@ -53,10 +55,10 @@ kubectl-user run --restart=Never --namespace "$NS" run-as-5 --image luksa/kubia-
 kubectl wait --timeout=60s -n "$NS" --for=condition=Ready pods run-as-5
 kubectl exec --namespace "$NS" run-as-5 -- id
 
-kubectl apply -f psp-capabilities.yaml
+kubectl apply -f "$DIR"/resource/psp-capabilities.yaml
 kubectl-user create -f pod-add-sysadmin-capability.yaml ||
     >&2 echo "EXPECTED ERROR: Cannot deploy a pod with capability 'sysadmin'"
-kubectl apply -f psp-volumes.yaml
+kubectl apply -f "$DIR"/resource/psp-volumes.yaml
 
 # 13.3.5 Assigning different PodSecurityPolicies to different users
 # and groups
