@@ -39,6 +39,8 @@ kubectl expose -n "$NS" pod external --type=NodePort --port 80 --name=external
 # Install netcat, ping, netstat and ps in these pods
 kubectl exec -n "$NS" -it external -- \
     sh -c "apt-get update && apt-get install -y dnsutils inetutils-ping netcat net-tools procps tcpdump"
+
+kubectl wait --timeout=60s -n "$NS" --for=condition=Ready pods nginx
 kubectl exec -n "$NS" -it nginx -- \
     sh -c "apt-get update && apt-get install -y dnsutils inetutils-ping netcat net-tools procps tcpdump"
 sleep 10
