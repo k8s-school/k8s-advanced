@@ -58,7 +58,7 @@ kubectl exec --namespace "$NS" run-as-5 -- id
 kubectl apply -f "$DIR"/resource/psp-capabilities.yaml
 kubectl-user create -f pod-add-sysadmin-capability.yaml ||
     >&2 echo "EXPECTED ERROR: Cannot deploy a pod with capability 'sysadmin'"
-kubectl apply -f psp-volumes.yaml
+kubectl apply -f "$DIR"/resource/psp-volumes.yaml
 
 # 13.3.5 Assigning different PodSecurityPolicies to different users
 # and groups
