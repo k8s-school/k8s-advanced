@@ -81,5 +81,5 @@ kubectl-user get events | head -n 2
 kubectl-admin create rolebinding default:psp:unprivileged \
     --role=psp:unprivileged \
     --serviceaccount=psp-example:default
-kubectl wait --for=condition=Ready pods -l app=pause -n psp-example
+kubectl wait --timeout=60s --for=condition=Ready pods -l app=pause -n psp-example
 kubectl-user get pods

@@ -27,7 +27,7 @@ kubectl config set-context $(kubectl config current-context) --namespace="$NS"
 
 POD="pod-with-host-network"
 kubectl apply -f "$POD.yaml"
-kubectl  wait --for=condition=Ready pods "$POD"
+kubectl wait --timeout=60s --for=condition=Ready pods "$POD"
 kubectl exec "$POD" ifconfig
 
 kubectl apply -f kubia-hostport.yaml
@@ -35,18 +35,18 @@ kubectl apply -f kubia-hostport.yaml
 
 POD="pod-with-host-pid-and-ipc"
 kubectl apply -f "$POD.yaml"
-kubectl  wait --for=condition=Ready pods "$POD"
+kubectl wait --timeout=60s --for=condition=Ready pods "$POD"
 kubectl exec "$POD" ps aux
 
 # RUNNING A POD WITHOUT SPECIFYING A SECURITY CONTEXT
 POD="pod-with-defaults"
 kubectl run "$POD" --restart=Never --image alpine --restart Never -- /bin/sleep 999999
-kubectl  wait --for=condition=Ready pods "$POD"
+kubectl wait --timeout=60s --for=condition=Ready pods "$POD"
 kubectl exec "$POD" id
 
 POD="pod-as-user-guest"
 kubectl apply -f "$POD.yaml"
-kubectl  wait --timeout=30s --for=condition=Ready pods "$POD"
+kubectl wait --timeout=60s --timeout=30s --for=condition=Ready pods "$POD"
 kubectl exec "$POD" id
 kubectl exec "$POD" cat /etc/passwd
 
@@ -55,14 +55,14 @@ kubectl get po pod-run-as-non-root
 
 POD="pod-privileged"
 kubectl apply -f "$POD.yaml"
-kubectl  wait --for=condition=Ready pods "$POD"
+kubectl wait --timeout=60s --for=condition=Ready pods "$POD"
 kubectl exec "$POD" ls /dev
 kubectl exec -it pod-with-defaults ls /dev
 kubectl exec -it pod-with-defaults -- date +%T -s "12:00:00"
 
 POD="pod-add-settime-capability"
 kubectl apply -f "$POD.yaml"
-kubectl  wait --for=condition=Ready pods "$POD"
+kubectl wait --timeout=60s --for=condition=Ready pods "$POD"
 # WARN: might break the cluster
 # kubectl exec "$POD"  -- date +%T -s "12:00:00"
 
@@ -72,13 +72,13 @@ kubectl exec pod-with-defaults -- ls -la / | grep tmp
 
 POD="pod-drop-chown-capability"
 kubectl apply -f "$POD.yaml"
-kubectl  wait --for=condition=Ready pods "$POD"
+kubectl wait --timeout=60s --for=condition=Ready pods "$POD"
 kubectl exec "$POD" chown guest /tmp && >&2 echo "ERROR this command should have failed"
 
 # 13.2.6 Preventing processes from writing to the container’s filesystem
 POD="pod-with-readonly-filesystem"
 kubectl apply -f "$POD.yaml"
-kubectl  wait --for=condition=Ready pods "$POD"
+kubectl wait --timeout=60s --for=condition=Ready pods "$POD"
 kubectl exec "$POD" touch /new-file && >&2 echo "ERROR this command should have failed"
 kubectl exec -it "$POD" touch /volume/newfile
 kubectl exec -it "$POD" -- ls -la /volume/newfile
@@ -86,7 +86,7 @@ kubectl exec -it "$POD" -- ls -la /volume/newfile
 # 13.2.7 Sharing volumes when containers run as different users
 POD="pod-with-shared-volume-fsgroup"
 kubectl apply -f "$POD.yaml"
-kubectl  wait --for=condition=Ready pods "$POD"
+kubectl wait --timeout=60s --for=condition=Ready pods "$POD"
 kubectl exec -it "$POD"  -c first -- sh -c "id && \
     ls -l / | grep volume && \
     echo foo > /volume/foo && \

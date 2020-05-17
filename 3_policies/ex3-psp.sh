@@ -50,7 +50,7 @@ kubectl-user create --namespace "$NS" -f pod-as-user-guest.yaml ||
     >&2 echo "EXPECTED ERROR: Cannot deploy a pod with 'run_as user' outside of the policy’s range"
 # DEPLOYING A POD WITH A CONTAINER IMAGE WITH AN OUT-OF-RANGE USER ID
 kubectl-user run --restart=Never --namespace "$NS" run-as-5 --image luksa/kubia-run-as-user-5 --restart Never
-kubectl  wait -n "$NS" --for=condition=Ready pods run-as-5
+kubectl wait --timeout=60s -n "$NS" --for=condition=Ready pods run-as-5
 kubectl exec --namespace "$NS" run-as-5 -- id
 
 kubectl apply -f psp-capabilities.yaml

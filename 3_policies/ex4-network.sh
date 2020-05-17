@@ -33,7 +33,7 @@ helm install --namespace "$NS" pgsql stable/postgresql --set master.podLabels.ti
 kubectl run -n "$NS" --restart=Never external --image=nginx -l "app=external"
 kubectl run -n "$NS" --restart=Never nginx --image=nginx -l "tier=webserver"
 
-kubectl  wait -n "$NS" --for=condition=Ready pods external
+kubectl wait --timeout=60s -n "$NS" --for=condition=Ready pods external
 
 kubectl expose -n "$NS" pod external --type=NodePort --port 80 --name=external
 # Install netcat, ping, netstat and ps in these pods
