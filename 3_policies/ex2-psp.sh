@@ -1,7 +1,8 @@
 #!/bin/sh
 
-set -e
-set -x
+DIR=$(cd "$(dirname "$0")"; pwd -P)
+
+set -eux
 
 # Run on kubeadm cluster
 # see "kubernetes in action" p390
@@ -44,16 +45,18 @@ fi
 kubectl-user auth can-i use podsecuritypolicy/example ||
     >&2 echo "EXPECTED ERROR"
 
-kubectl-admin create role psp:unprivileged \
-    --verb=use \
-    --resource=podsecuritypolicy \
-    --resource-name=example
+# kubectl-admin create role psp:unprivileged \
+#    --verb=use \
+#    --resource=podsecuritypolicy \
+#    --resource-name=example
+
+kubectl apply -f "$DIR"/resource/role-use-psp.yaml 
 
 kubectl-admin create rolebinding fake-user:psp:unprivileged \
     --role=psp:unprivileged \
     --serviceaccount=psp-example:fake-user
 
-kubectl-user auth can-i use podsecuritypolicy/example
+kubectl --as=system:serviceaccount:psp-example:fake-user auth can-i use podsecuritypolicy/example
 
 kubectl-user create -f /tmp/pause.yaml
 
