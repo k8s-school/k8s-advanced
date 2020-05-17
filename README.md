@@ -7,7 +7,7 @@
 
 ## Slides and materials
 
-All slides are [on our website](https://www.k8s-school.fr/pdf/E_advanced-kubernetes.pdf)
+All slides are [on our website](https://www.k8s-school.fr/pdf)
 
 ## Additional tools for Docker, RBAC
 
