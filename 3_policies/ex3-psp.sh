@@ -31,7 +31,7 @@ kubectl create rolebinding alice:edit \
 # Check
 alias kubectl-user="kubectl --as=alice --namespace '$NS'"
 
-kubectl-user run --generator=run-pod/v1 -it ubuntu --image=ubuntu id --restart Never
+kubectl-user run --restart=Never -it ubuntu --image=ubuntu id --restart Never
 
 # Remark: cluster-admin has access to all psp (see cluster-admin role), and use the most permissive in each section
 
@@ -49,7 +49,7 @@ kubectl apply -f psp-must-run-as.yaml
 kubectl-user create --namespace "$NS" -f pod-as-user-guest.yaml ||
     >&2 echo "EXPECTED ERROR: Cannot deploy a pod with 'run_as user' outside of the policy’s range"
 # DEPLOYING A POD WITH A CONTAINER IMAGE WITH AN OUT-OF-RANGE USER ID
-kubectl-user run --generator=run-pod/v1 --namespace "$NS" run-as-5 --image luksa/kubia-run-as-user-5 --restart Never
+kubectl-user run --restart=Never --namespace "$NS" run-as-5 --image luksa/kubia-run-as-user-5 --restart Never
 kubectl  wait -n "$NS" --for=condition=Ready pods run-as-5
 kubectl exec --namespace "$NS" run-as-5 -- id
 

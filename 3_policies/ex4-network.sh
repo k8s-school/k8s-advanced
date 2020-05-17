@@ -30,8 +30,8 @@ sleep 10
 helm install --namespace "$NS" pgsql stable/postgresql --set master.podLabels.tier="database",persistence.enabled="false"
 
 # Install nginx pods
-kubectl run -n "$NS" --generator=run-pod/v1 external --image=nginx -l "app=external"
-kubectl run -n "$NS" --generator=run-pod/v1 nginx --image=nginx -l "tier=webserver"
+kubectl run -n "$NS" --restart=Never external --image=nginx -l "app=external"
+kubectl run -n "$NS" --restart=Never nginx --image=nginx -l "tier=webserver"
 
 kubectl  wait -n "$NS" --for=condition=Ready pods external
 

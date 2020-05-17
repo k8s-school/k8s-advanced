@@ -40,7 +40,7 @@ kubectl exec "$POD" ps aux
 
 # RUNNING A POD WITHOUT SPECIFYING A SECURITY CONTEXT
 POD="pod-with-defaults"
-kubectl run "$POD" --generator=run-pod/v1 --image alpine --restart Never -- /bin/sleep 999999
+kubectl run "$POD" --restart=Never --image alpine --restart Never -- /bin/sleep 999999
 kubectl  wait --for=condition=Ready pods "$POD"
 kubectl exec "$POD" id
 
