@@ -50,13 +50,13 @@ kubectl-user auth can-i use podsecuritypolicy/example ||
 #    --resource=podsecuritypolicy \
 #    --resource-name=example
 
-kubectl apply -f "$DIR"/resource/role-use-psp.yaml 
+kubectl apply -n psp-example -f "$DIR"/resource/role-use-psp.yaml 
 
 kubectl-admin create rolebinding fake-user:psp:unprivileged \
     --role=psp:unprivileged \
     --serviceaccount=psp-example:fake-user
 
-kubectl --as=system:serviceaccount:psp-example:fake-user auth can-i use podsecuritypolicy/example
+kubectl-user auth can-i use podsecuritypolicy/example
 
 kubectl-user create -f /tmp/pause.yaml
 
