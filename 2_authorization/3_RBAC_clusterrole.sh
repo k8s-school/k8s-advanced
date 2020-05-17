@@ -95,7 +95,7 @@ kubectl exec -it -n $NS shell curl localhost:8001/api/v1/persistentvolumes
 
 # Why does it not work? Find the solution.
 kubectl delete rolebinding pv-reader -n $NS
-kubectl create clusterrolebinding pv-reader --clusterrole=pv-reader --serviceaccount=$NS:default -n $NS
+kubectl create clusterrolebinding pv-reader --clusterrole=pv-reader --serviceaccount=$NS:default
 kubectl label clusterrolebinding pv-reader "RBAC=clusterrole"
 
 # List again persistentvolumes at the cluster scope, with user "system:serviceaccount:$NS:default"
