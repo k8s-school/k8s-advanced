@@ -55,7 +55,7 @@ kubectl-user run --restart=Never --namespace "$NS" run-as-5 --image luksa/kubia-
 kubectl wait --timeout=60s -n "$NS" --for=condition=Ready pods run-as-5
 kubectl exec --namespace "$NS" run-as-5 -- id
 
-kubectl apply -f psp-capabilities.yaml
+kubectl apply -f "$DIR"/resource/psp-capabilities.yaml
 kubectl-user create -f pod-add-sysadmin-capability.yaml ||
     >&2 echo "EXPECTED ERROR: Cannot deploy a pod with capability 'sysadmin'"
 kubectl apply -f psp-volumes.yaml
