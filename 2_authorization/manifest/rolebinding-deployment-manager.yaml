@@ -1,8 +1,8 @@
 kind: RoleBinding
-apiVersion: rbac.authorization.k8s.io/v1beta1
+apiVersion: rbac.authorization.k8s.io/v1
 metadata:
   name: deployment-manager-binding
-  namespace: office
+  namespace: office 
 subjects:
 - kind: User
   name: employee

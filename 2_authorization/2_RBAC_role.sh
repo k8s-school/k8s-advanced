@@ -25,8 +25,7 @@ kubectl expose deployment microbot -n foo --type=NodePort --port=80 --name=micro
 kubectl run --generator=run-pod/v1 shell --image=k8sschool/kubectl-proxy:1.15.3 -n bar
 
 # Wait for pod bar:shell to be in running state
-kubectl  wait -n bar --for=condition=Ready pods shell
-
+kubectl wait -n bar --for=condition=Ready pods shell
 
 # Access svc 'foo:microbot-service' from pod 'bar:shell'
 while ! kubectl exec -it -n bar shell -- curl --connect-timeout 2 microbot-service.foo
