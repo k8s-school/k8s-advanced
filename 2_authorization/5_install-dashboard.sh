@@ -3,7 +3,7 @@
 set -euxo pipefail
 
 # Install dashboard and set up RBAC
-# see See https://github.com/kubernetes/dashboard
+# see https://github.com/kubernetes/dashboard
 
 DIR=$(cd "$(dirname "$0")"; pwd -P)
 
