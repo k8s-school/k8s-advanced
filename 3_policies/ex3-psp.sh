@@ -22,7 +22,7 @@ if [ ! -d "$KUBIA_DIR" ]; then
 fi
 
 # Exercice: define default policy
-kubectl apply -f /tmp/resource/psp/default-psp-with-rbac.yaml
+kubectl apply -f $DIR/../0_kubeadm/resource/psp/default-psp-with-rbac.yaml
 
 # Exercice: enable alice to create pod
 kubectl create rolebinding alice:edit \

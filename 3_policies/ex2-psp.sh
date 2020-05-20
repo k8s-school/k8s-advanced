@@ -21,7 +21,7 @@ kubectl create rolebinding -n psp-example fake-editor --clusterrole=edit --servi
 alias kubectl-admin='kubectl -n psp-example'
 alias kubectl-user='kubectl --as=system:serviceaccount:psp-example:fake-user -n psp-example'
 
-kubectl-admin apply -f https://raw.githubusercontent.com/kubernetes/website/master/content/en/examples/policy/example-psp.yaml
+kubectl apply -f https://raw.githubusercontent.com/kubernetes/website/master/content/en/examples/policy/example-psp.yaml
 kubectl label psp example "policies=psp"
 
 cat <<EOF > /tmp/pause.yaml
