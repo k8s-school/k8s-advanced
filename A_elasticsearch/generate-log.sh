@@ -1,10 +1,10 @@
 #!/bin/sh
 
-set -e
+set -eux
 
 kubectl delete pod,service -l "app=nginx" -n logging
 
-# Exercice: create a nginx pod + service in namespace 'loggin'
+# Exercice: create a nginx pod + service in namespace 'logging'
 kubectl run nginx --generator=run-pod/v1 --image=nginx -n logging
 kubectl label pod -n logging nginx "app=nginx"
 kubectl create service clusterip -n logging nginx --tcp 80
@@ -20,4 +20,5 @@ do
 done
 
 # Connect to nginx service to generate logs
-kubectl run --restart=Never -n logging loggenerator --image=busybox -- sh -c "while true; do wget http://nginx:80; rm index.html; sleep 2; done"
+kubectl run --restart= -n logging loggenerator --image=busybox -- sh -c "while true; do wget http://nginx:80; rm index.html; sleep 2; done"
+Never
