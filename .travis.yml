@@ -6,7 +6,7 @@ go:
 - 1.13.5
 
 before_script:
-  - git clone --depth 1 -b "k8s-v1.18.0" --single-branch https://github.com/k8s-school/kind-travis-ci.git
+  - git clone --depth 1 -b "k8s-v1.19.1" --single-branch https://github.com/k8s-school/kind-travis-ci.git
   - sudo ./kind-travis-ci/helm-install.sh
   - ./kind-travis-ci/kind/k8s-create.sh -c
 
