@@ -18,16 +18,22 @@ kubectl delete ns -l "policies=network"
 kubectl create namespace "$NS"
 kubectl label ns network "policies=network"
 
+# k8s 1.19 does not create anymore dafault sa when creating ns
+if not kubectl get serviceaccount default -n "$NS"
+then
+  kubectl create serviceaccount default -n "$NS"
+fi
+
 # Exercice: Install one postgresql pod with helm and add label "tier:database" to master pod
 # Disable data persistence
 helm delete pgsql || echo "WARN pgsql release not found"
 
-helm repo add stable https://kubernetes-charts.storage.googleapis.com
+helm repo add bitnami https://charts.bitnami.com/bitnami
 helm repo update
 
 kubectl apply -f $DIR/../0_kubeadm/resource/psp/default-psp-with-rbac.yaml
 sleep 10
-helm install --namespace "$NS" pgsql stable/postgresql --set master.podLabels.tier="database",persistence.enabled="false"
+helm install --namespace "$NS" pgsql bitnami/postgresql --set master.podLabels.tier="database",persistence.enabled="false"
 
 # Install nginx pods
 kubectl run -n "$NS" --restart=Never external --image=nginx -l "app=external"
