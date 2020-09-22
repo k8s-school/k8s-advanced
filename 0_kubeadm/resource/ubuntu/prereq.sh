@@ -73,7 +73,7 @@ EOF
 
 # Helm
 #
-HELM_VERSION="2.14.3"
+HELM_VERSION="3.8.4"
 wget -O /tmp/helm.tgz \
 https://storage.googleapis.com/kubernetes-helm/helm-v${HELM_VERSION}-linux-amd64.tar.gz
 cd /tmp
