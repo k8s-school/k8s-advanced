@@ -52,12 +52,7 @@ echo "-------------------"
 EXTERNAL_IP=$(kubectl get pods -n network external -o jsonpath='{.status.podIP}')
 PGSQL_IP=$(kubectl get pods -n network pgsql-postgresql-0 -o jsonpath='{.status.podIP}')
 kubectl exec -n "$NS" -it nginx -- netcat -q 2 -nzv ${PGSQL_IP} 5432
-while ! kubectl exec -n "$NS" -it nginx -- netcat -q 2 -zv pgsql-postgresql 5432
-do
-  # Cilium require some time to enable this NetworkPolicy
-  echo "Waiting for DNS access NetworkPolicy"
-  sleep 2
-done
+kubectl exec -n "$ns" -it nginx -- netcat -q 2 -zv pgsql-postgresql 5432
 kubectl exec -n "$NS" -it nginx -- netcat -q 2 -nzv $EXTERNAL_IP 80
 kubectl exec -n "$NS" -it external -- netcat -w 2 -zv www.k8s-school.fr 443
 
@@ -88,7 +83,12 @@ echo "---------------------"
 echo "WITH NETWORK POLICIES"
 echo "---------------------"
 kubectl exec -n "$NS" -it nginx -- netcat -q 2 -nzv ${PGSQL_IP} 5432
-kubectl exec -n "$NS" -it nginx -- netcat -q 2 -zv pgsql-postgresql 5432
+while ! kubectl exec -n "$ns" -it nginx -- netcat -q 2 -zv pgsql-postgresql 5432
+do
+  # cilium require some time to enable this networkpolicy
+  echo "waiting for dns access networkpolicy"
+  sleep 2
+done
 kubectl exec -n "$NS" -it nginx -- netcat -w 2 -nzv $EXTERNAL_IP 80 && >&2 echo "ERROR this command should have failed"
 kubectl exec -n "$NS" -it external -- netcat -w 2 -zv pgsql-postgresql 5432 && >&2 echo "ERROR this command should have failed"
 kubectl exec -n "$NS" -it external -- netcat -w 2 -zv www.k8s-school.fr 80 && >&2 echo "ERROR this command should have failed"
@@ -101,7 +101,12 @@ kubectl exec -n "$NS" -it external -- netcat -w 2 -nzv 128.30.52.100 80 && >&2 e
 NODE_PORT=$(kubectl get svc external -n network  -o jsonpath="{.spec.ports[0].nodePort}")
 curl --connect-timeout 2 "http://${NODE1_IP}:${NODE_PORT}" && >&2 echo "ERROR this command should have failed"
 kubectl apply -n "$NS" -f $DIR/resource/ingress-external.yaml
-curl "http://${NODE1_IP}:${NODE_PORT}"
+while ! curl "http://${NODE1_IP}:${NODE_PORT}"
+do
+  # cilium require some time to enable this networkpolicy
+  echo "waiting for external access networkpolicy"
+  sleep 2
+done
 
 # TODO: try to open NodePort with CIDR
 # May not be possible,
