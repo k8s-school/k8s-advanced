@@ -73,11 +73,11 @@ EOF
 
 # Helm
 #
-HELM_VERSION="3.8.4"
-wget -O /tmp/helm.tgz \
-https://storage.googleapis.com/kubernetes-helm/helm-v${HELM_VERSION}-linux-amd64.tar.gz
+ENV HELM_VERSION 3.3.3
+wget -O /tmp/helm.tgz https://get.helm.sh/helm-v${HELM_VERSION}-linux-amd64.tar.gz
 cd /tmp
 tar zxvf /tmp/helm.tgz
+rm /tmp/helm.tgz
 chmod +x /tmp/linux-amd64/helm
-mv /tmp/linux-amd64/helm /usr/local/bin/helm-${HELM_VERSION}
-ln -sf /usr/local/bin/helm-${HELM_VERSION} /usr/local/bin/helm
+mv /tmp/linux-amd64/helm /usr/local/bin/helm
+
