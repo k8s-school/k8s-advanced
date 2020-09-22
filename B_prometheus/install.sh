@@ -6,6 +6,9 @@ set -euxo pipefail
 
 NS="monitoring"
 
+# TODO hack, implement nicely helm delete
+helm delete prometheus-stack -n monitoring || echo "Unable to delete prometheus stack"
+
 kubectl delete ns -l name="$NS"
 kubectl create namespace "$NS"
 kubectl label ns "$NS" "name=$NS"

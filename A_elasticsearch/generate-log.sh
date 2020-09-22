@@ -20,5 +20,4 @@ do
 done
 
 # Connect to nginx service to generate logs
-kubectl run --restart= -n logging loggenerator --image=busybox -- sh -c "while true; do wget http://nginx:80; rm index.html; sleep 2; done"
-Never
+kubectl run --restart=Never -n logging loggenerator --image=busybox -- sh -c "while true; do wget http://nginx:80; rm index.html; sleep 2; done"
