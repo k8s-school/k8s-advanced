@@ -104,7 +104,7 @@ kubectl apply -n "$NS" -f $DIR/resource/ingress-external.yaml
 while ! curl "http://${NODE1_IP}:${NODE_PORT}"
 do
   # cilium require some time to enable this networkpolicy
-  echo "waiting for external access networkpolicy"
+  echo "waiting for networkpolicy: ingress to external pod"
   sleep 2
 done
 
