@@ -83,7 +83,7 @@ echo "---------------------"
 echo "WITH NETWORK POLICIES"
 echo "---------------------"
 kubectl exec -n "$NS" -it nginx -- netcat -q 2 -nzv ${PGSQL_IP} 5432
-while ! kubectl exec -n "$ns" -it nginx -- netcat -q 2 -zv pgsql-postgresql 5432
+while ! kubectl exec -n "$NS" -it nginx -- netcat -q 2 -zv pgsql-postgresql 5432
 do
   # cilium require some time to enable this networkpolicy
   echo "waiting for dns access networkpolicy"
