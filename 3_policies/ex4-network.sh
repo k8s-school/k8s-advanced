@@ -101,7 +101,7 @@ kubectl exec -n "$NS" -it external -- netcat -w 2 -nzv 128.30.52.100 80 && >&2 e
 NODE_PORT=$(kubectl get svc external -n network  -o jsonpath="{.spec.ports[0].nodePort}")
 curl --connect-timeout 2 "http://${NODE1_IP}:${NODE_PORT}" && >&2 echo "ERROR this command should have failed"
 kubectl apply -n "$NS" -f $DIR/resource/ingress-external.yaml
-while ! curl "http://${NODE1_IP}:${NODE_PORT}"
+while ! curl -connect-timeout 2 "http://${NODE1_IP}:${NODE_PORT}"
 do
   # cilium require some time to enable this networkpolicy
   echo "waiting for networkpolicy: ingress to external pod"
