@@ -46,7 +46,7 @@ kubectl  wait --for=condition=Ready pods shell
 # Check RBAC is enabled:
 # inside foo:shell, curl k8s api server 
 # at URL <API_SERVER>:<PORT>/api/v1/namespaces/foo/services
-kubectl exec -it shell curl localhost:8001/api/v1/namespaces/foo/services
+kubectl exec -it shell -- curl localhost:8001/api/v1/namespaces/foo/services
 
 # Study and create role manifest/service-reader.yaml in ns 'foo'
 kubectl apply -f "$DIR/manifest/service-reader.yaml"
@@ -60,10 +60,10 @@ kubectl create role service-reader --verb=get --verb=list --resource=services -n
 kubectl create rolebinding service-reader-rb --role=service-reader --serviceaccount=foo:default
 
 # List service in ns 'foo' from foo:shell
-kubectl exec -it -n foo shell curl localhost:8001/api/v1/namespaces/foo/services
+kubectl exec -it -n foo shell -- curl localhost:8001/api/v1/namespaces/foo/services
 
 # List service in ns 'foo' from bar:shell
-kubectl exec -it -n bar shell curl localhost:8001/api/v1/namespaces/foo/services
+kubectl exec -it -n bar shell -- curl localhost:8001/api/v1/namespaces/foo/services
 
 # Use the patch command, and jsonpatch syntax to add bind foo:service-reader to sa bar.default
 # See http://jsonpatch.com for examples
@@ -71,4 +71,4 @@ kubectl patch rolebindings.rbac.authorization.k8s.io -n foo service-reader-rb --
     -p='[{"op": "add", "path": "/subjects/-", "value": {"kind": "ServiceAccount","name": "default","namespace": "bar"} }]'
 
 # List service in ns 'foo' from bar:shell
-kubectl exec -it -n bar shell curl localhost:8001/api/v1/namespaces/foo/services
+kubectl exec -it -n bar shell -- curl localhost:8001/api/v1/namespaces/foo/services
