@@ -1,0 +1,56 @@
+#!/bin/sh
+
+set -e
+set -x
+
+DIR=$(cd "$(dirname "$0")"; pwd -P)
+
+NS="network"
+
+NODE1_IP=$(kubectl get nodes --selector="! node-role.kubernetes.io/master" \
+    -o=jsonpath='{.items[0].status.addresses[0].address}')
+
+# Run on kubeadm cluster
+# see "kubernetes in action" p391
+kubectl delete ns -l "policies=network"
+kubectl create namespace "$NS"
+kubectl label ns network "policies=network"
+
+# Exercice: Install one postgresql pod with helm and add label "tier:database" to master pod
+# Disable data persistence
+helm delete pgsql || echo "WARN pgsql release not found"
+
+helm repo add bitnami https://charts.bitnami.com/bitnami
+helm repo update
+
+kubectl apply -f $DIR/../0_kubeadm/resource/psp/default-psp-with-rbac.yaml
+sleep 10
+helm install --namespace "$NS" pgsql bitnami/postgresql --set master.podLabels.tier="database",persistence.enabled="false"
+
+# Install nginx pods
+kubectl run -n "$NS" --restart=Never external --image=nginx -l "app=external"
+kubectl run -n "$NS" --restart=Never nginx --image=nginx -l "tier=webserver"
+
+kubectl wait --timeout=60s -n "$NS" --for=condition=Ready pods external
+
+kubectl expose -n "$NS" pod external --type=NodePort --port 80 --name=external
+# Install netcat, ping, netstat and ps in these pods
+kubectl exec -n "$NS" -it external -- \
+    sh -c "apt-get update && apt-get install -y dnsutils inetutils-ping netcat net-tools procps tcpdump"
+
+kubectl wait --timeout=60s -n "$NS" --for=condition=Ready pods nginx
+kubectl exec -n "$NS" -it nginx -- \
+    sh -c "apt-get update && apt-get install -y dnsutils inetutils-ping netcat net-tools procps tcpdump"
+sleep 10
+
+# then check what happen with no network policies defined
+echo "-------------------"
+echo "NO NETWORK POLICIES"
+echo "-------------------"
+EXTERNAL_IP=$(kubectl get pods -n network external -o jsonpath='{.status.podIP}')
+PGSQL_IP=$(kubectl get pods -n network pgsql-postgresql-0 -o jsonpath='{.status.podIP}')
+kubectl exec -n "$NS" -it nginx -- netcat -q 2 -nzv ${PGSQL_IP} 5432
+kubectl exec -n "$NS" -it nginx -- netcat -q 2 -zv pgsql-postgresql 5432
+kubectl exec -n "$NS" -it nginx -- netcat -q 2 -nzv $EXTERNAL_IP 80
+kubectl exec -n "$NS" -it external -- netcat -w 2 -zv www.k8s-school.fr 443
+
