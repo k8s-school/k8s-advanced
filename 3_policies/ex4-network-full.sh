@@ -22,12 +22,12 @@ kubectl label ns network "policies=network"
 # Disable data persistence
 helm delete pgsql || echo "WARN pgsql release not found"
 
-helm repo add bitnami https://charts.bitnami.com/bitnami
+helm repo add bitnami https://charts.bitnami.com/bitnami || echo "Failed to add bitnami repo"
 helm repo update
 
 kubectl apply -f $DIR/../0_kubeadm/resource/psp/default-psp-with-rbac.yaml
 sleep 10
-helm install --namespace "$NS" pgsql bitnami/postgresql --set master.podLabels.tier="database",persistence.enabled="false"
+helm install --version 10.1.0 --namespace "$NS" pgsql bitnami/postgresql --set primary.podLabels.tier="database",persistence.enabled="false"
 
 # Install nginx pods
 kubectl run -n "$NS" --restart=Never external --image=nginx -l "app=external"
@@ -55,15 +55,6 @@ kubectl exec -n "$NS" -it nginx -- netcat -q 2 -nzv ${PGSQL_IP} 5432
 kubectl exec -n "$NS" -it nginx -- netcat -q 2 -zv pgsql-postgresql 5432
 kubectl exec -n "$NS" -it nginx -- netcat -q 2 -nzv $EXTERNAL_IP 80
 kubectl exec -n "$NS" -it external -- netcat -w 2 -zv www.k8s-school.fr 443
-
-# Test network policies below
-KUBIA_DIR="/tmp/kubernetes-in-action"
-if [ ! -d "$KUBIA_DIR" ]; then
-    git clone https://github.com/k8s-school/kubernetes-in-action.git /tmp/kubernetes-in-action
-
-fi
-
-cd "$KUBIA_DIR/Chapter13"
 
 # Exercice: Secure communication between webserver and database, and test (webserver, database, external, outside)
 # Enable DNS access, see https://docs.projectcalico.org/v3.7/security/advanced-policy#5-allow-dns-egress-traffic
@@ -113,5 +104,13 @@ done
 # see https://github.com/projectcalico/canal/issues/87,
 # and https://docs.projectcalico.org/v3.7/security/host-endpoints/tutorial#content-main
 kubectl apply -n "$NS" -f $DIR/resource/ingress-external-ipblock.yaml
+
+# Test network policies below
+KUBIA_DIR="/tmp/kubernetes-in-action"
+if [ ! -d "$KUBIA_DIR" ]; then
+    git clone https://github.com/k8s-school/kubernetes-in-action.git /tmp/kubernetes-in-action
+
+fi
+
 kubectl apply -n "$NS" -f $KUBIA_DIR/Chapter13/network-policy-cart.yaml
 

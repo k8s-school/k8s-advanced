@@ -1,5 +1,7 @@
 #!/bin/sh
 
+# See https://itnext.io/benchmark-results-of-kubernetes-network-plugins-cni-over-10gbit-s-network-36475925a560
+
 set -e
 set -x
 
@@ -20,12 +22,12 @@ kubectl label ns network "policies=network"
 # Disable data persistence
 helm delete pgsql || echo "WARN pgsql release not found"
 
-helm repo add bitnami https://charts.bitnami.com/bitnami
+helm repo add bitnami https://charts.bitnami.com/bitnami || echo "Failed to add bitnami repo"
 helm repo update
 
 kubectl apply -f $DIR/../0_kubeadm/resource/psp/default-psp-with-rbac.yaml
 sleep 10
-helm install --namespace "$NS" pgsql bitnami/postgresql --set master.podLabels.tier="database",persistence.enabled="false"
+helm install --version 10.1.0 --namespace "$NS" pgsql bitnami/postgresql --set primary.podLabels.tier="database",persistence.enabled="false"
 
 # Install nginx pods
 kubectl run -n "$NS" --restart=Never external --image=nginx -l "app=external"
@@ -54,3 +56,4 @@ kubectl exec -n "$NS" -it nginx -- netcat -q 2 -zv pgsql-postgresql 5432
 kubectl exec -n "$NS" -it nginx -- netcat -q 2 -nzv $EXTERNAL_IP 80
 kubectl exec -n "$NS" -it external -- netcat -w 2 -zv www.k8s-school.fr 443
 
+# Exercice: Secure communication between webserver and database, and test (webserver, database, external, outside)
