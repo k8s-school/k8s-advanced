@@ -55,6 +55,6 @@ echo "----------"
 # TODO test '-ttl' option
 JOIN_CMD=$($SSH "$USER@$MASTER" -- 'sudo kubeadm token create --print-join-command')
 # Remove trailing carriage return
-JOIN_CMD=$(echo "$JOIN_CMD" | grep 'kubeadm' | sed -e 's/[\r\n]//g')
+JOIN_CMD=$(echo "$JOIN_CMD" | grep 'kubeadm join' | sed -e 's/[\r\n]//g')
 echo "Join command: $JOIN_CMD"
 parallel -vvv --tag -- "$SSH $USER@{} -- sudo '$JOIN_CMD'" ::: $NODES
