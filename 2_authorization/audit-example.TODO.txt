@@ -1,0 +1,52 @@
+# rakkess
+
+## Install
+kubectl krew install access-matrix
+
+## Example
+
+$ kubectl access-matrix resource pod --namespace kube-system
+NAME                                    KIND            SA-NAMESPACE        LIST  CREATE  UPDATE  DELETE
+attachdetach-controller                 ServiceAccount  kube-system         ✔     ✖       ✖       ✖
+coredns                                 ServiceAccount  kube-system         ✔     ✖       ✖       ✖
+cronjob-controller                      ServiceAccount  kube-system         ✔     ✖       ✖       ✔
+daemon-set-controller                   ServiceAccount  kube-system         ✔     ✔       ✖       ✔
+deployment-controller                   ServiceAccount  kube-system         ✔     ✖       ✔       ✖
+endpoint-controller                     ServiceAccount  kube-system         ✔     ✖       ✖       ✖
+endpointslice-controller                ServiceAccount  kube-system         ✔     ✖       ✖       ✖
+generic-garbage-collector               ServiceAccount  kube-system         ✔     ✖       ✔       ✔
+horizontal-pod-autoscaler               ServiceAccount  kube-system         ✔     ✖       ✖       ✖
+job-controller                          ServiceAccount  kube-system         ✔     ✔       ✖       ✔
+local-path-provisioner-service-account  ServiceAccount  local-path-storage  ✔     ✔       ✔       ✔
+namespace-controller                    ServiceAccount  kube-system         ✔     ✖       ✖       ✔
+node-controller                         ServiceAccount  kube-system         ✔     ✖       ✖       ✔
+persistent-volume-binder                ServiceAccount  kube-system         ✔     ✔       ✖       ✔
+pod-garbage-collector                   ServiceAccount  kube-system         ✔     ✖       ✖       ✔
+prometheus-stack-kube-prom-operator     ServiceAccount  monitoring          ✔     ✖       ✖       ✔
+prometheus-stack-kube-prom-prometheus   ServiceAccount  monitoring          ✔     ✖       ✖       ✖
+prometheus-stack-kube-state-metrics     ServiceAccount  monitoring          ✔     ✖       ✖       ✖
+pvc-protection-controller               ServiceAccount  kube-system         ✔     ✖       ✖       ✖
+replicaset-controller                   ServiceAccount  kube-system         ✔     ✔       ✖       ✔
+replication-controller                  ServiceAccount  kube-system         ✔     ✔       ✖       ✔
+resourcequota-controller                ServiceAccount  kube-system         ✔     ✖       ✖       ✖
+statefulset-controller                  ServiceAccount  kube-system         ✔     ✔       ✔       ✔
+system:kube-controller-manager          User                                ✔     ✖       ✖       ✖
+system:kube-scheduler                   User                                ✔     ✖       ✖       ✔
+system:masters                          Group                               ✔     ✔       ✔       ✔
+
+
+
+# who-can 
+ Install : kubectl krew install who-can
+ 
+ Usage : kubectl who-can VERB [Flags] 
+ 
+ Aide: kubectl who-can --help
+ 
+# rback
+Install:
+curl -sL https://github.com/team-soteria/rback/releases/download/v0.4.0/linux_rback -o rback
+chmod +x rback
+ 
+Usage:
+kubectl get sa,roles,rolebindings,clusterroles,clusterrolebindings --all-namespaces -o json | ./rback > result.dot

@@ -85,7 +85,7 @@ do
 done
 
 # List persistentvolumes at the cluster scope, with user "system:serviceaccount:$NS:default"
-kubectl exec -it -n $NS shell curl localhost:8001/api/v1/persistentvolumes
+kubectl exec -it -n $NS shell -- curl localhost:8001/api/v1/persistentvolumes
 
 # Create rolebinding 'pv-reader' which can get and list resource 'persistentvolumes'
 kubectl create rolebinding pv-reader --clusterrole=pv-reader --serviceaccount=$NS:default -n $NS
@@ -99,4 +99,4 @@ kubectl create clusterrolebinding pv-reader --clusterrole=pv-reader --serviceacc
 kubectl label clusterrolebinding pv-reader "RBAC=clusterrole"
 
 # List again persistentvolumes at the cluster scope, with user "system:serviceaccount:$NS:default"
-kubectl exec -it -n $NS shell curl localhost:8001/api/v1/persistentvolumes
+kubectl exec -it -n $NS shell -- curl localhost:8001/api/v1/persistentvolumes
