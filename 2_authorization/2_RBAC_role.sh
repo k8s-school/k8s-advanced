@@ -22,7 +22,7 @@ kubectl create deployment microbot --image=dontrebootme/microbot:v1 -n foo
 kubectl expose deployment microbot -n foo --type=NodePort --port=80 --name=microbot-service
 
 # Create pod using image 'k8sschool/kubectl-proxy:1.15.3', and named 'shell' in ns 'bar'
-kubectl run --generator=run-pod/v1 shell --image=k8sschool/kubectl-proxy:1.15.3 -n bar
+kubectl run shell --image=k8sschool/kubectl-proxy:1.15.3 -n bar
 
 # Wait for pod bar:shell to be in running state
 kubectl wait -n bar --for=condition=Ready pods shell
