@@ -14,7 +14,7 @@ kubectl create namespace "$NS"
 kubectl label ns "$NS" "name=$NS"
 
 helm repo add prometheus-community https://prometheus-community.github.io/helm-charts || echo "Unable to add repo prometheus-community"
-helm repo add stable https://charts.helm.sh/stable || echo "Unable to add repo stable"
+helm repo add stable https://charts.helm.sh/stable --force-update
 helm repo update
 helm install --version 12.2.2 prometheus-stack prometheus-community/kube-prometheus-stack -n monitoring
 
