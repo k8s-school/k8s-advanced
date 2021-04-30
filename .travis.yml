@@ -6,9 +6,9 @@ go:
 - 1.13.5
 
 before_script:
-  - git clone --depth 1 -b "1.0.0" --single-branch https://github.com/k8s-school/kind-travis-ci.git
-  - sudo ./kind-travis-ci/helm-install.sh
-  - ./kind-travis-ci/k8s-create.sh -c calico
+  - git clone --depth 1 -b "1.0.0" --single-branch https://github.com/k8s-school/kind-helper.git
+  - sudo ./kind-helper/helm-install.sh
+  - ./kind-helper/k8s-create.sh -c calico
   - curl -fsSL -o get_helm.sh https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3
   - chmod 700 get_helm.sh
   - ./get_helm.sh --version v3.5.4
