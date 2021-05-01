@@ -44,11 +44,11 @@ parallel --tag -- $SCP --recurse "$DIR/resource" $USER@{}:/tmp ::: "$MASTER" $NO
 
 echo "Install prerequisites"
 echo "---------------------"
-parallel -vvv --tag -- "gcloud compute ssh $USER@{} -- sudo sh /tmp/resource/$DISTRIB/prereq.sh" ::: "$MASTER" $NODES
+parallel -vvv --tag -- "gcloud compute ssh $USER@{} -- sudo bash /tmp/resource/$DISTRIB/prereq.sh" ::: "$MASTER" $NODES
 
 echo "Initialize master"
 echo "-----------------"
-$SSH "$USER@$MASTER" -- sh /tmp/resource/init.sh "$POLICY_OPT"
+$SSH "$USER@$MASTER" -- bash /tmp/resource/init.sh "$POLICY_OPT"
 
 echo "Join nodes"
 echo "----------"

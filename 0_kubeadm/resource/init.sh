@@ -1,6 +1,6 @@
-#!/bin/sh
+#!/bin/bash
 
-set -e
+set -euxo pipefail
 
 DIR=$(cd "$(dirname "$0")"; pwd -P)
 
