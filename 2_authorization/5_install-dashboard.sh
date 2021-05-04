@@ -12,7 +12,7 @@ kubectl delete ns -l "RBAC=dashboard"
 kubectl create ns kubernetes-dashboard
 kubectl label ns kubernetes-dashboard "RBAC=dashboard"
 
-kubectl apply -f https://raw.githubusercontent.com/kubernetes/dashboard/v2.0.0-rc6/aio/deploy/recommended.yaml
+kubectl apply -f https://raw.githubusercontent.com/kubernetes/dashboard/v2.0.0/aio/deploy/recommended.yaml 
 kubectl apply -f "$DIR"/manifest/sa_dashboard.yaml
 
 echo "Get token"
