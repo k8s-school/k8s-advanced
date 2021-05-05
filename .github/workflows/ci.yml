@@ -16,7 +16,7 @@ jobs:
       - name: Create k8s/kind cluster
         run: |
           git clone --depth 1 -b "k8s-v1.20.2-1" --single-branch https://github.com/k8s-school/kind-helper.git
-          ./kind-helper/k8s-create.sh -s
+          ./kind-helper/k8s-create.sh -p -c calico
       - name: Run test on internals
         run: |
           ./1_internals/ci.sh

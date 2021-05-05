@@ -11,7 +11,7 @@ set -eux
 kubectl delete psp -l restricted
 
 # See https://kubernetes.io/docs/concepts/policy/pod-security-policy/#run-another-pod
-kubectl delete ns,psp -l "policies=psp"
+kubectl delete namespace,psp -l "policies=psp"
 
 kubectl create namespace psp-example
 kubectl label ns psp-example "policies=psp"
