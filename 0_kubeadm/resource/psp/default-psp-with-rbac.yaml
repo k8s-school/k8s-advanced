@@ -2,8 +2,8 @@ apiVersion: policy/v1beta1
 kind: PodSecurityPolicy
 metadata:
   annotations:
-    apparmor.security.beta.kubernetes.io/allowedProfileNames: 'runtime/default'
-    apparmor.security.beta.kubernetes.io/defaultProfileName:  'runtime/default'
+    # apparmor.security.beta.kubernetes.io/allowedProfileNames: 'runtime/default'
+    # apparmor.security.beta.kubernetes.io/defaultProfileName:  'runtime/default'
     seccomp.security.alpha.kubernetes.io/allowedProfileNames: 'docker/default'
     seccomp.security.alpha.kubernetes.io/defaultProfileName:  'docker/default'
   name: default

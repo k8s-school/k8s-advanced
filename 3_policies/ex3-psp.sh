@@ -36,7 +36,7 @@ kubectl create rolebinding alice:edit \
 # Check
 alias kubectl-user="kubectl --as=alice --namespace '$NS'"
 
-kubectl-user run --restart=Never -it ubuntu --image=ubuntu id --restart Never
+kubectl-user run --restart=Never -it ubuntu --image=ubuntu id
 
 # Remark: cluster-admin has access to all psp (see cluster-admin role), and use the most permissive in each section
 
@@ -71,9 +71,10 @@ kubectl create rolebinding bob:edit \
     --user=bob\
     --namespace "$NS"
 # WARN: book says 'psp-privileged', p.398
-kubectl create clusterrolebinding psp-bob --clusterrole=privileged-psp --user=bob
+kubectl create clusterrolebinding psp-bob --clusterrole=psp:privileged --user=bob
 kubectl label clusterrolebindings psp-bob "policies=$NS"
 
-kubectl --namespace "$NS" --user alice create -f pod-privileged.yaml ||
+# --as is usable even if user does not exist, this does not apply for -- user
+kubectl --namespace "$NS" --as alice create -f pod-privileged.yaml ||
     >&2 echo "EXPECTED ERROR: User 'alice' cannot create a privileged pod"
-kubectl --namespace "$NS" --user bob create -f pod-privileged.yaml 
+kubectl --namespace "$NS" --as bob create -f pod-privileged.yaml

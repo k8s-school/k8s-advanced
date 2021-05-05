@@ -1,8 +1,8 @@
-#!/bin/bash
+#!/bin/sh
 
 DIR=$(cd "$(dirname "$0")"; pwd -P)
 
-set -euxo pipefail
+set -eux
 
 # Run on kubeadm cluster
 # see "kubernetes in action" p390
