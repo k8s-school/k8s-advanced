@@ -1,0 +1,32 @@
+# Qserv operator CI workflow
+---
+name: "CI"
+on:
+  push:
+  pull_request:
+    branches:
+      - master
+jobs:
+  main:
+    name: Validate k8s install
+    runs-on: ubuntu-18.04
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+      - name: Create k8s/kind cluster
+        run: |
+          git clone --depth 1 -b "k8s-v1.20.2-1" --single-branch https://github.com/k8s-school/kind-helper.git
+          ./kind-helper/k8s-create.sh -s
+      - name: Run test on internals
+        run: |
+          ./1_internals/ci.sh
+      - name: Run test on authorization
+        run: |
+          ./2_authorization/ci.sh
+      - name: Run test on policies
+        run: |
+          ./3_policies/ci.sh
+      - name: Run test on computational resources
+        run: |
+          ./4_computational_resources/ci.sh
+          ./B_prometheus/install.sh
