@@ -6,7 +6,7 @@ go:
 - 1.13.5
 
 before_script:
-  - git clone --depth 1 -b "1.0.0" --single-branch https://github.com/k8s-school/kind-helper.git
+  - git clone --depth 1 -b "k8s-v1.20.2-1" --single-branch https://github.com/k8s-school/kind-helper.git
   - sudo ./kind-helper/helm-install.sh
   - ./kind-helper/k8s-create.sh -c calico
   - curl -fsSL -o get_helm.sh https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3
