@@ -1,14 +1,16 @@
-#!/bin/sh
+#!/bin/bash
 
 DIR=$(cd "$(dirname "$0")"; pwd -P)
 
-set -eux
+set -euxo pipefail
 
 # Run on kubeadm cluster
 # see "kubernetes in action" p390
 
-# See https://kubernetes.io/docs/concepts/policy/pod-security-policy/#run-another-pod
+# Delete psp 'restricted', installed during kind install, so that fake use can not create pod
+kubectl delete psp -l restricted
 
+# See https://kubernetes.io/docs/concepts/policy/pod-security-policy/#run-another-pod
 kubectl delete ns,psp -l "policies=psp"
 
 kubectl create namespace psp-example

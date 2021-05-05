@@ -8,6 +8,9 @@ DIR=$(cd "$(dirname "$0")"; pwd -P)
 # Run on kubeadm cluster
 # see "kubernetes in action" p391
 
+# Delete psp 'restricted', installed during kind install, so that fake use can not create pod
+kubectl delete psp -l restricted
+
 NS="psp-advanced"
 
 kubectl delete ns,psp,clusterrolebindings -l "policies=$NS"
