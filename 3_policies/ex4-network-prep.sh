@@ -27,7 +27,7 @@ helm repo update
 
 kubectl apply -f $DIR/../0_kubeadm/resource/psp/default-psp-with-rbac.yaml
 sleep 10
-helm install --version 10.1.0 --namespace "$NS" pgsql bitnami/postgresql --set primary.podLabels.tier="database",persistence.enabled="false"
+helm install --version 10.4.0 --namespace "$NS" pgsql bitnami/postgresql --set primary.podLabels.tier="database",persistence.enabled="false"
 
 # Install nginx pods
 kubectl run -n "$NS" --restart=Never external --image=nginx -l "app=external"

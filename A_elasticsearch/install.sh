@@ -22,7 +22,7 @@ helm install elasticsearch stable/elasticsearch --namespace "$NS" --set data.ter
 #    --set master.persistence.enabled=false --set data.persistence.enabled=false
 
 # Install fluentd
-helm repo add kiwigrid https://kiwigrid.github.io
+# helm repo add kiwigrid https://kiwigrid.github.io
 helm install fluentd --namespace "$NS" kiwigrid/fluentd-elasticsearch --set elasticsearch.host=elasticsearch-client."$NS".svc.cluster.local,elasticsearch.port=9200
 
 # Install Kibana
