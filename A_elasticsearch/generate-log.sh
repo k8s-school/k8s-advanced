@@ -1,11 +1,11 @@
-#!/bin/sh
+#!/bin/bash
 
-set -eux
+set -euxo pipefail
 
 kubectl delete pod,service -l "app=nginx" -n logging
 
 # Exercice: create a nginx pod + service in namespace 'logging'
-kubectl run nginx --generator=run-pod/v1 --image=nginx -n logging
+kubectl run nginx --image=nginx -n logging
 kubectl label pod -n logging nginx "app=nginx"
 kubectl create service clusterip -n logging nginx --tcp 80
 
