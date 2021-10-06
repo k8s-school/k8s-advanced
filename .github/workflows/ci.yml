@@ -16,7 +16,7 @@ jobs:
       - name: Create k8s/kind cluster
         run: |
           git clone --depth 1 -b "k8s-1.21.1-0" --single-branch https://github.com/k8s-school/kind-helper.git
-          ./kind-helper/k8s-create.sh -p -c calico
+          ./kind-helper/k8s-create.sh -c calico
           kubectl get nodes
           kubectl get pods -n kube-system
       - name: Run test on internals
@@ -25,9 +25,6 @@ jobs:
       - name: Run test on authorization
         run: |
           ./2_authorization/ci.sh
-      - name: Run test on policies
-        run: |
-          ./3_policies/ci.sh
       - name: Run test on computational resources
         run: |
           ./4_computational_resources/ci.sh
