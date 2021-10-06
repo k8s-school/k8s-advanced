@@ -8,6 +8,7 @@ set -x
 
 DIR=$(cd "$(dirname "$0")"; pwd -P)
 
+sleep 10
 kubectl get pods -n kube-system
 kubectl  wait --timeout=240s --for=condition=Ready -n kube-system pods -l component=etcd,tier=control-plane
 kubectl get pods -n kube-system
