@@ -13,10 +13,13 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
+      - name: Stop apparmor 
+        run: |
+          sudo /etc/init.d/apparmor stop
       - name: Create k8s/kind cluster
         run: |
-          git clone --depth 1 -b "k8s-1.21.1-0" --single-branch https://github.com/k8s-school/kind-helper.git
-          ./kind-helper/k8s-create.sh -c calico
+          git clone --depth 1 -b "k8s-1.21.1-1" --single-branch https://github.com/k8s-school/kind-helper.git
+          ./kind-helper/k8s-create.sh -p -c calico
           kubectl get nodes
           kubectl get pods -n kube-system
       - name: Run test on internals
