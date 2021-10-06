@@ -15,7 +15,7 @@ KIND_CONTEXT="$KIND_CLUSTER_NAME"
 
 # on kind run:
 PV_NODE="kind-worker"
-docker exec -it -- "$PV_NODE" mkdir -p /data/disk2
+docker exec -- "$PV_NODE" mkdir -p /data/disk2
 
 # on gce run:
 # PV_NODE="clus0-1"
