@@ -17,6 +17,8 @@ jobs:
         run: |
           git clone --depth 1 -b "k8s-1.21.1-0" --single-branch https://github.com/k8s-school/kind-helper.git
           ./kind-helper/k8s-create.sh -p -c calico
+          kubectl get nodes
+          kubectl get pods -n kube-system
       - name: Run test on internals
         run: |
           ./1_internals/ci.sh
