@@ -34,7 +34,7 @@ kubectl apply -f "$DIR/manifest/local-storage.yaml"
 # Create a local PersistentVolume on kube-node-1:/data/disk1
 # with label "RBAC=clusterrole"
 # see https://kubernetes.io/docs/concepts/storage/volumes/#local
-# WARN: Directory kube-node-1:/data/disk1, must exist, 
+# WARN: Directory kube-node-1:/data/disk1, must exist,
 # for next exercice, create also kube-node-1:/data/disk2
 NODE="kind-worker"
 cat <<EOF >/tmp/pv-1.yaml
@@ -72,7 +72,7 @@ kubectl create clusterrole pv-reader --verb=get,list --resource=persistentvolume
 kubectl label clusterrole pv-reader "RBAC=clusterrole"
 
 # Create pod using image 'k8sschool/kubectl-proxy:1.15.3', and named 'shell' in ns '$NS'
-kubectl run --generator=run-pod/v1 shell --image=k8sschool/kubectl-proxy:1.15.3 -n $NS
+kubectl run shell --image=k8sschool/kubectl-proxy:1.15.3 -n $NS
 
 # Wait for $NS:shell to be in running state
 while true

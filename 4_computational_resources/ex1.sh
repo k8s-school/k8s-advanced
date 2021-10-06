@@ -44,12 +44,12 @@ fi
 
 # INSPECTING A NODE’S CAPACITY
 POD="requests-pod-2"
-kubectl run "$POD" --generator=run-pod/v1 --image=busybox --restart Never --requests='cpu=800m,memory=20Mi' -- dd if=/dev/zero of=/dev/null
+kubectl run "$POD" --image=busybox --restart Never --requests='cpu=800m,memory=20Mi' -- dd if=/dev/zero of=/dev/null
 kubectl  wait --for=condition=Ready pods "$POD"
 kubectl get po "$POD"
 # Exercice: flood the cluster CPU capacity by creation two pods
-kubectl run requests-pod-3 --generator=run-pod/v1 --image=busybox --restart Never --requests='cpu=1.5,memory=20Mi' -- dd if=/dev/zero of=/dev/null
-kubectl run requests-pod-4 --generator=run-pod/v1 --image=busybox --restart Never --requests='cpu=1.5,memory=20Mi' -- dd if=/dev/zero of=/dev/null
+kubectl run requests-pod-3 --image=busybox --restart Never --requests='cpu=1.5,memory=20Mi' -- dd if=/dev/zero of=/dev/null
+kubectl run requests-pod-4 --image=busybox --restart Never --requests='cpu=1.5,memory=20Mi' -- dd if=/dev/zero of=/dev/null
 kubectl describe po requests-pod-4
 kubectl describe node "$NODE"
 kubectl delete po requests-pod-3

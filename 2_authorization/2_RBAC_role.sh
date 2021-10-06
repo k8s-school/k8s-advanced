@@ -38,13 +38,13 @@ done
 kubectl config set-context $(kubectl config current-context) --namespace=foo
 
 # Create pod using image 'k8sschool/kubectl-proxy:1.15.3', and named 'shell' in ns 'foo'
-kubectl run --generator=run-pod/v1 shell --image=k8sschool/kubectl-proxy:1.15.3
+kubectl run shell --image=k8sschool/kubectl-proxy:1.15.3
 
 # Wait for foo:shell to be in running state
 kubectl  wait --for=condition=Ready pods shell
 
 # Check RBAC is enabled:
-# inside foo:shell, curl k8s api server 
+# inside foo:shell, curl k8s api server
 # at URL <API_SERVER>:<PORT>/api/v1/namespaces/foo/services
 kubectl exec -it shell -- curl localhost:8001/api/v1/namespaces/foo/services
 
