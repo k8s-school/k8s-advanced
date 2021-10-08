@@ -19,7 +19,7 @@ kubectl label ns foo bar "RBAC=role"
 # Create a deployment and its related service in ns 'foo'
 # for example use image gcr.io/kuar-demo/kuard-amd64:green
 kubectl create deployment kuard --image=gcr.io/kuar-demo/kuard-amd64:green -n foo
-kubectl expose deployment kuard -n foo --type=NodePort --port=80 --name=kuard-service
+kubectl expose deployment kuard -n foo --type=NodePort --port=8080 --name=kuard-service
 
 # Create pod using image 'k8sschool/kubectl-proxy:1.15.3', and named 'shell' in ns 'bar'
 kubectl run shell --image=k8sschool/kubectl-proxy:1.15.3 -n bar
@@ -28,7 +28,7 @@ kubectl run shell --image=k8sschool/kubectl-proxy:1.15.3 -n bar
 kubectl wait -n bar --for=condition=Ready pods shell
 
 # Access svc 'foo:kuard-service' from pod 'bar:shell'
-while ! kubectl exec -it -n bar shell -- curl --connect-timeout 2 kuard-service.foo
+while ! kubectl exec -it -n bar shell -- curl --connect-timeout 2 http://kuard-service.foo:8080
 do
     echo "Waiting for kuard svc"
     sleep 2
