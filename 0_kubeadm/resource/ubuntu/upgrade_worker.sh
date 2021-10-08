@@ -9,12 +9,17 @@ DIR=$(cd "$(dirname "$0")"; pwd -P)
 
 sudo apt-get update -q
 
+sudo apt-mark unhold kubeadm
+sudo apt-get install -y kubeadm="$LATEST_KUBEADM" --allow-downgrades
+sudo apt-mark hold kubeadm
+kubeadm version
+
 sudo kubeadm upgrade node
 
 sudo apt-get update -q
 sudo apt-mark unhold kubeadm kubelet kubectl
 sudo apt-get install -y kubectl="$LATEST_KUBEADM" kubelet="$LATEST_KUBEADM" \
-    kubeadm="$LATEST_KUBEADM" --allow-downgrades
+    --allow-downgrades
 sudo apt-mark hold kubeadm kubelet kubectl
 
 sudo systemctl restart kubelet
