@@ -4,6 +4,8 @@
 
 set -euxo pipefail
 
+DIR=$(cd "$(dirname "$0")"; pwd -P)
+
 NS="monitoring"
 
 # TODO hack, implement nicely helm delete
@@ -18,3 +20,7 @@ helm repo add stable https://charts.helm.sh/stable --force-update
 helm repo update
 helm install --version "19.0.2" prometheus-stack prometheus-community/kube-prometheus-stack -n monitoring
 
+echo "Exercice: access prometheus-grafana and other services using the website documentation"
+echo "1. Watch all pod in monitoring namespace"
+echo "2. Retrieve grafana password using 'helm show values prometheus-community/kube-prometheus-stack'"
+echo "3. Port forward grafana and access it in a web browser"
