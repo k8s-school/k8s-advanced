@@ -17,9 +17,9 @@ kubectl create ns bar
 kubectl label ns foo bar "RBAC=role"
 
 # Create a deployment and its related service in ns 'foo'
-# for example use image dontrebootme/microbot:v1
-kubectl create deployment microbot --image=dontrebootme/microbot:v1 -n foo
-kubectl expose deployment microbot -n foo --type=NodePort --port=80 --name=microbot-service
+# for example use image gcr.io/kuar-demo/kuard-amd64:green
+kubectl create deployment kuard --image=gcr.io/kuar-demo/kuard-amd64:green -n foo
+kubectl expose deployment kuard -n foo --type=NodePort --port=80 --name=kuard-service
 
 # Create pod using image 'k8sschool/kubectl-proxy:1.15.3', and named 'shell' in ns 'bar'
 kubectl run shell --image=k8sschool/kubectl-proxy:1.15.3 -n bar
@@ -27,10 +27,10 @@ kubectl run shell --image=k8sschool/kubectl-proxy:1.15.3 -n bar
 # Wait for pod bar:shell to be in running state
 kubectl wait -n bar --for=condition=Ready pods shell
 
-# Access svc 'foo:microbot-service' from pod 'bar:shell'
-while ! kubectl exec -it -n bar shell -- curl --connect-timeout 2 microbot-service.foo
+# Access svc 'foo:kuard-service' from pod 'bar:shell'
+while ! kubectl exec -it -n bar shell -- curl --connect-timeout 2 kuard-service.foo
 do
-    echo "Waiting for microbot svc"
+    echo "Waiting for kuard svc"
     sleep 2
 done
 # Set the namespace preference to 'foo'
