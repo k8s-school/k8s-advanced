@@ -9,7 +9,7 @@ DIR=$(cd "$(dirname "$0")"; pwd -P)
 
 sudo apt-get update -q
 
-sudo kubeadm upgrade node config --kubelet-version "$LATEST_K8S"
+sudo kubeadm upgrade node
 
 sudo apt-get update -q
 sudo apt-mark unhold kubeadm kubelet kubectl
