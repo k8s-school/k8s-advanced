@@ -12,6 +12,7 @@ kubectl delete psp -l restricted
 
 # See https://kubernetes.io/docs/concepts/policy/pod-security-policy/#run-another-pod
 kubectl delete namespace,psp -l "policies=psp"
+kubectl delete psp default || echo "OK: No default psp, from psp-advanced" 
 
 kubectl create namespace psp-example
 kubectl label ns psp-example "policies=psp"
