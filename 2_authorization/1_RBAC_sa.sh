@@ -34,5 +34,5 @@ echo
 
 # Talk to the API server with custom ServiceAccount 'foo'
 # (tip: use 'main' container inside 'curl-custom-sa' pod)
-# If RBAC is enabled, it should be able to list nothing
-kubectl exec -it curl-custom-sa -c main curl localhost:8001/api/v1/pods
+# If RBAC is enabled, it should not be able to list anything
+kubectl exec -it curl-custom-sa -c main -- curl localhost:8001/api/v1/pods
