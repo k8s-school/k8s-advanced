@@ -52,7 +52,7 @@ SCP="gcloud compute scp"
 SSH="gcloud compute ssh"
 ```
 
-## Copier puis paramétrer ce fichier dans la toolbox
+## Copier ce fichier dans la toolbox
 
 `create.sh`:
 ```shell
