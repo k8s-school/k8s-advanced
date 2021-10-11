@@ -1,9 +1,8 @@
-EXERCICE KUBEADM: Installer automatiquement un cluster k8s
-##########################################################
+# EXERCICE KUBEADM: Installer automatiquement un cluster k8s
 
-Documentation d'installation simplifiée: https://www.k8s-school.fr/resources/fr/blog/kubeadm/
+## Lire la documentation d'installation simplifiée: https://www.k8s-school.fr/resources/fr/blog/kubeadm/
 
-Connection SSH depuis la toolbox:
+## Vérifier la connection SSH depuis la toolbox:
 
 ```
 ssh clusX-0
@@ -11,7 +10,7 @@ ssh clusX-1
 ssh clusX-2
 ```
 
-Récupération de la zone des VMs:
+## Récupérer la zone des VMs:
 
 ```
 $ gcloud compute instances list
@@ -32,8 +31,9 @@ clus4-1  asia-southeast1-c  n1-standard-2               10.148.0.38    35.197.15
 clus4-2  asia-southeast1-c  n1-standard-2               10.148.0.37    34.87.110.164    RUNNING
 ```
 
-Copier puis paramétrer ce fichier dans la toolbox, nom 'env.sh':
+## Copier puis paramétrer ce fichier dans la toolbox
 
+`env.sh`:
 ```shell
 # DISTRIB="centos"
 DISTRIB="ubuntu"
@@ -52,7 +52,9 @@ SCP="gcloud compute scp"
 SSH="gcloud compute ssh"
 ```
 
-Copier puis paramétrer ce fichier dans la toolbox, nom 'create.sh:
+## Copier puis paramétrer ce fichier dans la toolbox
+
+`create.sh`:
 ```shell
 #!/bin/sh
 
@@ -116,9 +118,11 @@ echo "Join command: $JOIN_CMD"
 parallel -vvv --tag -- "$SSH $USER@{} -- sudo '$JOIN_CMD'" ::: $NODES
 ```
 
-Ecrire les scripts resource/prereq.sh et resource/init.sh
+## Ecrire les scripts resource/prereq.sh et resource/init.sh
 
-# Script de reset du cluster, reset.sh:
+## Réinitialisation du cluster
+
+`reset.sh`:
 ```shell
 #!/bin/sh
 
