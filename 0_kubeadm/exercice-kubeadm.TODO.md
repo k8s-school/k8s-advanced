@@ -1,17 +1,20 @@
-# EXERCICE KUBEADM
-##################
+EXERCICE KUBEADM: Installer automatiquement un cluster k8s
+##########################################################
 
-Installer automatiquement un cluster k8s
-
-Doc install manuelle: https://www.k8s-school.fr/resources/fr/blog/kubeadm/
+Documentation d'installation simplifiée: https://www.k8s-school.fr/resources/fr/blog/kubeadm/
 
 Connection SSH depuis la toolbox:
+
+```
 ssh clusX-0
 ssh clusX-1
 ssh clusX-2
+```
 
+Récupération de la zone des VMs:
 
-Zone du cluster:
+```
+$ gcloud compute instances list
 clus0-0  asia-east1-c       n1-standard-2               10.140.15.225  35.229.139.210   RUNNING
 clus0-1  asia-east1-c       n1-standard-2               10.140.15.227  35.201.237.31    RUNNING
 clus0-2  asia-east1-c       n1-standard-2               10.140.15.226  104.199.223.107  RUNNING
@@ -27,32 +30,30 @@ clus3-2  asia-northeast2-c  n1-standard-2               10.174.0.43    34.97.247
 clus4-0  asia-southeast1-c  n1-standard-2               10.148.0.39    34.126.77.71     RUNNING
 clus4-1  asia-southeast1-c  n1-standard-2               10.148.0.38    35.197.153.195   RUNNING
 clus4-2  asia-southeast1-c  n1-standard-2               10.148.0.37    34.87.110.164    RUNNING
-clus5-0  europe-north1-c    n1-standard-2               10.166.0.14    35.228.255.124   RUNNING
-clus5-1  europe-north1-c    n1-standard-2               10.166.0.17    35.228.2.72      RUNNING
-clus5-2  europe-north1-c    n1-standard-2               10.166.0.12    35.228.138.252   RUNNING
-clus6-0  europe-west1-c     n1-standard-2               10.132.0.2     35.195.219.91    RUNNING
-clus6-1  europe-west1-c     n1-standard-2               10.132.15.202  34.78.58.250     RUNNING
-clus6-2  europe-west1-c     n1-standard-2               10.132.15.201  34.78.86.141     RUNNING
-
+```
 
 Copier puis paramétrer ce fichier dans la toolbox, nom 'env.sh':
-  # DISTRIB="centos"
-  DISTRIB="ubuntu"
+
+```shell
+# DISTRIB="centos"
+DISTRIB="ubuntu"
 
 
-  MASTER="clusX-0"
-  NODES="clusX-1 clusX-2"
+MASTER="clusX-0"
+NODES="clusX-1 clusX-2"
 
-  # USER=fabrice_jammes_clermont_in2p3_fr
-  USER=k8sstudent_gmail_com
+# USER=fabrice_jammes_clermont_in2p3_fr
+USER=k8sstudent_gmail_com
 
-  ZONE="asia-east1-c"
-  gcloud config set compute/zone $ZONE
+ZONE="asia-east1-c"
+gcloud config set compute/zone $ZONE
 
-  SCP="gcloud compute scp"
-  SSH="gcloud compute ssh"
+SCP="gcloud compute scp"
+SSH="gcloud compute ssh"
+```
 
 Copier puis paramétrer ce fichier dans la toolbox, nom 'create.sh:
+```shell
 #!/bin/sh
 
 # Create an up and running k8s cluster
@@ -113,10 +114,12 @@ JOIN_CMD=$($SSH "$USER@$MASTER" -- 'sudo kubeadm token create --print-join-comma
 JOIN_CMD=$(echo "$JOIN_CMD" | grep 'kubeadm join' | sed -e 's/[\r\n]//g')
 echo "Join command: $JOIN_CMD"
 parallel -vvv --tag -- "$SSH $USER@{} -- sudo '$JOIN_CMD'" ::: $NODES
+```
 
 Ecrire les scripts resource/prereq.sh et resource/init.sh
 
-# Script de reset du cluster:
+# Script de reset du cluster, reset.sh:
+```shell
 #!/bin/sh
 
 # Reset a k8s cluster an all nodes
@@ -134,9 +137,10 @@ echo "Reset all nodes"
 echo "---------------"
 parallel -vvv --tag -- "$SSH {} -- sh /tmp/resource/reset.sh" ::: $NODES
 $SSH "$USER@$MASTER" -- sh /tmp/resource/reset.sh "$MASTER" 
+```
 
-
-remote reset.sh
+et `resource/reset.sh`
+```
 #!/bin/sh
 
 # Reset k8s cluster
@@ -148,3 +152,4 @@ sudo -- sh -c "iptables -F && iptables -t nat -F && iptables -t mangle -F && ipt
 sudo -- ipvsadm --clear
 echo "Reset succeed"
 echo "-------------"
+```
