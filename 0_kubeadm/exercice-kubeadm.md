@@ -1,4 +1,4 @@
-# EXERCICE KUBEADM: Installer automatiquement un cluster k8s
+# EXERCICE: Installer automatiquement un cluster k8s avec kubeadm
 
 ## Lire la documentation d'installation simplifiée: https://www.k8s-school.fr/resources/fr/blog/kubeadm/
 

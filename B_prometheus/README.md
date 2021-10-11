@@ -15,7 +15,13 @@ kubectl port-forward -n monitoring prometheus-prometheus-stack-kube-prom-prometh
 # Grafana access:
 # login as admin with password prom-operator
 kubectl port-forward $(kubectl get  pods --selector=app.kubernetes.io/name=grafana -n  monitoring --output=jsonpath="{.items..metadata.name}") -n monitoring  3000 &
+
+# Alertmanager UI access
+kubectl port-forward -n monitoring svc/alertmanager-operated 9093:9093 
+
 ```
+
+
 
 # Ex2: Install metric-server
 

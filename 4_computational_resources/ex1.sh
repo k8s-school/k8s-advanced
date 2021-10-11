@@ -35,7 +35,7 @@ POD="requests-pod"
 kubectl apply -f "$KUBIA_DIR"/Chapter14/"$POD".yaml
 kubectl  wait --for=condition=Ready pods "$POD"
 
-if timeout 3 --foreground kubectl exec -it "$POD" -- top
+if timeout --foreground 3 kubectl exec -it "$POD" -- top
 then
     echo "WARN: 'top' has exited for unknow reason"
 else
@@ -43,13 +43,35 @@ else
 fi
 
 # INSPECTING A NODE’S CAPACITY
-POD="requests-pod-2"
-kubectl run "$POD" --image=busybox --restart Never --requests='cpu=800m,memory=20Mi' -- dd if=/dev/zero of=/dev/null
-kubectl  wait --for=condition=Ready pods "$POD"
-kubectl get po "$POD"
 # Exercice: flood the cluster CPU capacity by creation two pods
-kubectl run requests-pod-3 --image=busybox --restart Never --requests='cpu=1.5,memory=20Mi' -- dd if=/dev/zero of=/dev/null
-kubectl run requests-pod-4 --image=busybox --restart Never --requests='cpu=1.5,memory=20Mi' -- dd if=/dev/zero of=/dev/null
+
+for i in 2 3 4
+do
+POD="requests-pod-$i"
+cat <<EOF >/tmp/$POD.yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: $POD
+spec:
+  containers:
+  - image: busybox
+    command: ["dd", "if=/dev/zero", "of=/dev/null"]
+    name: main
+    resources:
+      requests:
+        cpu: 1500m
+        memory: 20Mi
+EOF
+  kubectl apply -f "/tmp/requests-pod-$i.yaml"
+  if [ $i -neq 4 ]
+  then
+    kubectl wait --for=condition=Ready pods "$POD"
+    kubectl describe pod "$POD"
+    kubectl describe node "$NODE"
+  fi
+done
+
 kubectl describe po requests-pod-4
 kubectl describe node "$NODE"
 kubectl delete po requests-pod-3

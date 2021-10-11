@@ -30,8 +30,8 @@ sleep 10
 helm install --version 10.4.0 --namespace "$NS" pgsql bitnami/postgresql --set primary.podLabels.tier="database",persistence.enabled="false"
 
 # Install nginx pods
-kubectl run -n "$NS" --restart=Never external --image=nginx -l "app=external"
-kubectl run -n "$NS" --restart=Never nginx --image=nginx -l "tier=webserver"
+kubectl run -n "$NS" external --image=nginx -l "app=external"
+kubectl run -n "$NS" nginx --image=nginx -l "tier=webserver"
 
 kubectl wait --timeout=60s -n "$NS" --for=condition=Ready pods external
 

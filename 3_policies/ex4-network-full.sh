@@ -25,9 +25,8 @@ helm delete pgsql || echo "WARN pgsql release not found"
 helm repo add bitnami https://charts.bitnami.com/bitnami || echo "Failed to add bitnami repo"
 helm repo update
 
-kubectl apply -f $DIR/../0_kubeadm/resource/psp/default-psp-with-rbac.yaml
 sleep 10
-helm install --version 10.1.0 --namespace "$NS" pgsql bitnami/postgresql --set primary.podLabels.tier="database",persistence.enabled="false"
+helm install --version 11.9.1 --namespace "$NS" pgsql bitnami/postgresql --set primary.podLabels.tier="database",persistence.enabled="false"
 
 # Install nginx pods
 kubectl run -n "$NS" --restart=Never external --image=nginx -l "app=external"

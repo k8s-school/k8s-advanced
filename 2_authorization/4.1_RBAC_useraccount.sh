@@ -47,7 +47,7 @@ kubectl apply -f "$DIR/manifest/role-deployment-manager.yaml"
 
 kubectl apply -f "$DIR/manifest/rolebinding-deployment-manager.yaml"
 
-kubectl --context=employee-context run --image bitnami/dokuwiki mydokuwiki
+kubectl --context=employee-context run --image=ubuntu -- sleep infinity
 kubectl --context=employee-context get pods
 
 kubectl --context=employee-context get pods --namespace=default || \
