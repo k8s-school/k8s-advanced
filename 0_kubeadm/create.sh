@@ -9,7 +9,7 @@ usage() {
     cat << EOD
 Usage: $(basename "$0") [options]
 Available options:
-  -p            Add support for policies (psp+network)
+  -p            Add support for network policies
   -h            This message
 
 Init k8s master

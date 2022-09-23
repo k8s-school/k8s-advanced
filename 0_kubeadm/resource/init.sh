@@ -68,11 +68,6 @@ mkdir -p $HOME/.kube
 sudo cp -f /etc/kubernetes/admin.conf $HOME/.kube/config
 sudo chown $(id -u):$(id -g) $HOME/.kube/config
 
-# Apply POLICY to enable kube-proxy and cni pods startup
-if [ -n "$POLICY" ]; then
-    kubectl apply -f /tmp/resource/psp/privileged-psp-with-rbac.yaml
-fi
-
 # Enable auto-completion
 echo 'source <(kubectl completion bash)' >> ~/.bashrc
 

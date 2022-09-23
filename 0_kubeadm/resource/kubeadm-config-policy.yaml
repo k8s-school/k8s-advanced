@@ -1,6 +1,8 @@
+apiVersion: kubeadm.k8s.io/v1beta3
+kind: ClusterConfiguration
 apiServer:
   extraArgs:
-    enable-admission-plugins: AlwaysPullImages,DefaultStorageClass,PodSecurityPolicy,LimitRanger,MutatingAdmissionWebhook,ValidatingAdmissionWebhook,ResourceQuota
+    enable-admission-plugins: AlwaysPullImages,DefaultStorageClass,PodSecurityPolicy,LimitRanger,MutatingAdmissionWebhook,ValidatingAdmissionWebhook,ResourceQuota 
     token-auth-file: /etc/kubernetes/auth/tokens.csv
   extraVolumes:
   - hostPath: /etc/kubernetes/auth
@@ -10,10 +12,8 @@ apiServer:
 apiVersion: kubeadm.k8s.io/v1beta3
 certificatesDir: /etc/kubernetes/pki
 clusterName: kubernetes
-kind: ClusterConfiguration
 kubernetesVersion: v1.24.6
+# Current version:
+# kubernetesVersion: v1.25.0
 networking:
-  dnsDomain: cluster.local
-  podSubnet: 10.244.0.0/16
   serviceSubnet: 10.96.0.0/12
-scheduler: {}

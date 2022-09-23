@@ -13,5 +13,7 @@ apiVersion: kubeadm.k8s.io/v1beta3
 certificatesDir: /etc/kubernetes/pki
 clusterName: kubernetes
 kubernetesVersion: v1.24.6
+# Current version:
+# kubernetesVersion: v1.25.0
 networking:
   serviceSubnet: 10.96.0.0/12

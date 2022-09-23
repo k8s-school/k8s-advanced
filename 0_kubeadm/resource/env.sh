@@ -1,5 +1,7 @@
 KUBEADM_VERSION="1.24.6-00"
 
+# Current version
+# KUBEADM_VERSION="1.25.2-00"
 # Use:
 # apt-cache madison kubeadm
 
