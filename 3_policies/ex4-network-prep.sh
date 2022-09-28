@@ -17,7 +17,7 @@ NODE1_IP=$(kubectl get nodes --selector="! node-role.kubernetes.io/master" \
 # see "kubernetes in action" p391
 kubectl delete ns -l "policies=$NS"
 kubectl create namespace "$NS"
-kubectl label ns network "policies=$NS"
+kubectl label ns "$NS" "policies=$NS"
 
 
 # Exercice: Install one postgresql pod with helm and add label "tier:database" to master pod
