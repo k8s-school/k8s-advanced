@@ -28,7 +28,7 @@ helm repo add bitnami https://charts.bitnami.com/bitnami || echo "Failed to add 
 helm repo update
 
 sleep 5
-helm install --version 10.4.0 --namespace "$NS" pgsql bitnami/postgresql --set primary.podLabels.tier="database",persistence.enabled="false"
+helm install --version 11.9.1 --namespace "$NS" pgsql bitnami/postgresql --set primary.podLabels.tier="database",persistence.enabled="false"
 
 # Install nginx pods
 kubectl run -n "$NS" external --image=nginx -l "app=external"
