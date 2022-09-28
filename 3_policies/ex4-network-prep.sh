@@ -7,26 +7,27 @@ set -x
 
 DIR=$(cd "$(dirname "$0")"; pwd -P)
 
-NS="network"
+ID=0
+NS="network-$ID"
 
 NODE1_IP=$(kubectl get nodes --selector="! node-role.kubernetes.io/master" \
     -o=jsonpath='{.items[0].status.addresses[0].address}')
 
 # Run on kubeadm cluster
 # see "kubernetes in action" p391
-kubectl delete ns -l "policies=network"
+kubectl delete ns -l "policies=$NS"
 kubectl create namespace "$NS"
-kubectl label ns network "policies=network"
+kubectl label ns network "policies=$NS"
+
 
 # Exercice: Install one postgresql pod with helm and add label "tier:database" to master pod
 # Disable data persistence
-helm delete pgsql || echo "WARN pgsql release not found"
+helm delete pgsql --namespace "$NS" || echo "WARN pgsql release not found"
 
 helm repo add bitnami https://charts.bitnami.com/bitnami || echo "Failed to add bitnami repo"
 helm repo update
 
-kubectl apply -f $DIR/../0_kubeadm/resource/psp/default-psp-with-rbac.yaml
-sleep 10
+sleep 5
 helm install --version 10.4.0 --namespace "$NS" pgsql bitnami/postgresql --set primary.podLabels.tier="database",persistence.enabled="false"
 
 # Install nginx pods
