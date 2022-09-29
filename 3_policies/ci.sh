@@ -1,10 +1,10 @@
 #!/bin/bash
 
-set -e
+set -euxo pipefail
 
 DIR=$(cd "$(dirname "$0")"; pwd -P)
 
 $DIR/ex1-securitycontext.sh
 $DIR/ex2-podsecurity.sh
-# $DIR/ex3-psp.sh
-$DIR/ex4-network-full.sh
+export EX4_NETWORK_FULL=true
+$DIR/ex4-network.sh
