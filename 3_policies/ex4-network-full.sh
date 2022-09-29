@@ -57,7 +57,6 @@ kubectl exec -n "$NS" -it external -- netcat -w 2 -zv www.k8s-school.fr 443
 
 # Exercice: Secure communication between webserver and database, and test (webserver, database, external, outside)
 # Enable DNS access, see https://docs.projectcalico.org/v3.7/security/advanced-policy#5-allow-dns-egress-traffic
-kubectl label namespace kube-system name=kube-system --overwrite
 kubectl apply -n "$NS" -f $DIR/resource/allow-dns-access.yaml
 
 # Edit original file, replace app with tier
@@ -73,12 +72,6 @@ echo "---------------------"
 echo "WITH NETWORK POLICIES"
 echo "---------------------"
 kubectl exec -n "$NS" -it nginx -- netcat -q 2 -nzv ${PGSQL_IP} 5432
-while ! kubectl exec -n "$NS" -it nginx -- netcat -q 2 -zv pgsql-postgresql 5432
-do
-  # cilium require some time to enable this networkpolicy
-  echo "waiting for dns access networkpolicy"
-  sleep 2
-done
 kubectl exec -n "$NS" -it nginx -- netcat -w 2 -nzv $EXTERNAL_IP 80 && >&2 echo "ERROR this command should have failed"
 kubectl exec -n "$NS" -it external -- netcat -w 2 -zv pgsql-postgresql 5432 && >&2 echo "ERROR this command should have failed"
 kubectl exec -n "$NS" -it external -- netcat -w 2 -zv www.k8s-school.fr 80 && >&2 echo "ERROR this command should have failed"
