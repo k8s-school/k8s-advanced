@@ -25,6 +25,8 @@ EOF
 # Apply sysctl params without reboot
 sudo sysctl --system
 
+sudo apt-get install -y git
+
 # Install containerd
 ## Set up the repository
 ### Install packages to allow apt to use a repository over HTTPS
