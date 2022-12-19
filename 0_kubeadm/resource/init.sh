@@ -72,7 +72,9 @@ sudo chown $(id -u):$(id -g) $HOME/.kube/config
 echo 'source <(kubectl completion bash)' >> ~/.bashrc
 
 # Install CNI plugin
-kubectl apply -f "https://raw.githubusercontent.com/projectcalico/calico/v3.24.5/manifests/calico.yaml"
+# See https://projectcalico.docs.tigera.io/getting-started/kubernetes/quickstart
+kubectl create -f https://raw.githubusercontent.com/projectcalico/calico/v3.24.5/manifests/tigera-operator.yaml
+kubectl create -f https://raw.githubusercontent.com/projectcalico/calico/v3.24.5/manifests/custom-resources.yaml
 
 kubectl wait --for=condition=ready --timeout=-1s nodes $(hostname) 
 
