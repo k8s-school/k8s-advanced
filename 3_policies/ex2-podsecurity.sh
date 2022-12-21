@@ -219,5 +219,9 @@ fi
 
 echo "Use 'crictl inspect' to check pods on nodes"
 
+node=$(kubectl get pod -n verify-pod-security busybox-restricted -o "jsonpath={.spec.nodeName}")
+
+# docker exec -it $node crictl inspect busybox
+
 
 

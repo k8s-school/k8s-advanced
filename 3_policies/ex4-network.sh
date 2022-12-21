@@ -45,7 +45,7 @@ kubectl exec -n "$NS" -it nginx -- \
     sh -c "apt-get update && apt-get install -y dnsutils inetutils-ping netcat net-tools procps tcpdump"
 
 # Wait for pgsql pods to be ready
-kubectl wait --for=condition=Ready -n network-0 pods -l app.kubernetes.io/instance=pgsql
+kubectl wait --for=condition=Ready -n "$NS" pods -l app.kubernetes.io/instance=pgsql
 
 # then check what happen with no network policies defined
 echo "-------------------"
