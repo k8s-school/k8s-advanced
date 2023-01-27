@@ -2,19 +2,18 @@ apiVersion: kubeadm.k8s.io/v1beta3
 kind: ClusterConfiguration
 apiServer:
   extraArgs:
-    enable-admission-plugins: AlwaysPullImages,DefaultStorageClass
+    enable-admission-plugins: AlwaysPullImages,DefaultStorageClass,LimitRanger,MutatingAdmissionWebhook,ValidatingAdmissionWebhook,ResourceQuota
     token-auth-file: /etc/kubernetes/auth/tokens.csv
   extraVolumes:
   - hostPath: /etc/kubernetes/auth
     mountPath: /etc/kubernetes/auth
     name: tokens
   timeoutForControlPlane: 4m0s
-apiVersion: kubeadm.k8s.io/v1beta3
 certificatesDir: /etc/kubernetes/pki
 clusterName: kubernetes
-kubernetesVersion: v1.24.6
+kubernetesVersion: v1.25.6 
 # Current version:
-# kubernetesVersion: v1.25.0
+# kubernetesVersion: v1.26.1
 networking:
   # See https://projectcalico.docs.tigera.io/getting-started/kubernetes/quickstart
   podSubnet: 192.168.0.0/16

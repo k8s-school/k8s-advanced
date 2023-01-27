@@ -17,12 +17,9 @@ Init k8s master
 EOD
 }
 
-POLICY_OPT=""
-
 # Get the options
-while getopts hp c ; do
+while getopts h c ; do
     case $c in
-        p) POLICY_OPT="-p" ;;
         h) usage ; exit 0 ;;
         \?) usage ; exit 2 ;;
     esac
@@ -48,7 +45,7 @@ parallel -vvv --tag -- "gcloud compute ssh $USER@{} -- sudo bash /tmp/resource/$
 
 echo "Initialize master"
 echo "-----------------"
-$SSH "$USER@$MASTER" -- bash /tmp/resource/init.sh "$POLICY_OPT"
+$SSH "$USER@$MASTER" -- bash /tmp/resource/init.sh
 
 echo "Join nodes"
 echo "----------"

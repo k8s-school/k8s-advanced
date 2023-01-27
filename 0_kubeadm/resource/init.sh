@@ -11,7 +11,6 @@ Initialize k8s master with kubeadm
 
 Usage: $(basename "$0") [options]
 Available options:
-  -p            Install POLICY
   -h            This message
 
 Init k8s master
@@ -19,12 +18,9 @@ Init k8s master
 EOD
 }
 
-POLICY=""
-
 # Get the options
-while getopts hp c ; do
+while getopts h c ; do
     case $c in
-        p) POLICY="enabled" ;;
         h) usage ; exit 0 ;;
         \?) usage ; exit 2 ;;
     esac
@@ -53,12 +49,7 @@ else
     git pull
 fi
 
-if [ -n "$POLICY" ]; then
-    echo "-- Enable POLICY --"
-    KUBEADM_CONFIG="/etc/kubeadm/kubeadm-config-policy.yaml"
-else
-    KUBEADM_CONFIG="/etc/kubeadm/kubeadm-config.yaml"
-fi
+KUBEADM_CONFIG="/etc/kubeadm/kubeadm-config.yaml"
 
 # Init cluster using configuration file
 sudo kubeadm init --config="$KUBEADM_CONFIG"

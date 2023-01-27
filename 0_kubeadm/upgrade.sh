@@ -18,7 +18,7 @@ $SSH "$MASTER" -- 'sh /tmp/resource/backup_master.sh'
 
 echo "Upgrade master node"
 echo "-------------------"
-$SSH "$MASTER" -- sudo "sh /tmp/resource/$DISTRIB/upgrade_master.sh"
+$SSH "$MASTER" -- "sh /tmp/resource/$DISTRIB/upgrade_master.sh"
 
 echo "Upgrade worker nodes"
 echo "--------------------"
