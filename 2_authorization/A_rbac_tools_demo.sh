@@ -4,8 +4,11 @@
 
 set -euxo pipefail
 
-# Install RBAC tools
+# Install rbac-tool
 curl https://raw.githubusercontent.com/alcideio/rbac-tool/master/download.sh | bash
+
+# Add rbac-tool to PATH
+export PATH=$PWD/bin:$PATH
 
 # Generate bash completion
 source <(rbac-tool bash-completion)
