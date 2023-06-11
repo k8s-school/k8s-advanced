@@ -60,8 +60,10 @@ sudo systemctl restart containerd
 ##
 sudo apt-get update 
 sudo apt-get install -y apt-transport-https ca-certificates curl
-sudo curl -fsSLo /usr/share/keyrings/kubernetes-archive-keyring.gpg https://packages.cloud.google.com/apt/doc/apt-key.gpg
-echo "deb [signed-by=/usr/share/keyrings/kubernetes-archive-keyring.gpg] https://apt.kubernetes.io/ kubernetes-xenial main" | sudo tee /etc/apt/sources.list.d/kubernetes.list
+sudo mkdir -p /etc/apt/keyrings
+sudo rm -f /etc/apt/keyrings/kubernetes-archive-keyring.gpg
+curl -fsSL https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo gpg --batch --dearmor -o /etc/apt/keyrings/kubernetes-archive-keyring.gpg
+echo "deb [signed-by=/etc/apt/keyrings/kubernetes-archive-keyring.gpg] https://apt.kubernetes.io/ kubernetes-xenial main" | sudo tee /etc/apt/sources.list.d/kubernetes.list
 
 sudo apt-get update
 apt-get install -y --allow-downgrades --allow-change-held-packages \
@@ -86,4 +88,3 @@ tar zxvf /tmp/helm.tgz
 rm /tmp/helm.tgz
 chmod +x /tmp/linux-amd64/helm
 mv /tmp/linux-amd64/helm /usr/local/bin/helm
-
