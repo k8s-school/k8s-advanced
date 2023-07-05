@@ -60,7 +60,8 @@ kubectl label --overwrite ns verify-pod-security \
   pod-security.kubernetes.io/warn=baseline \
   pod-security.kubernetes.io/audit=baseline
 
-# Next, try to deploy a privileged workload in the namespace.
+# Next, try to deploy a workload in the namespace.
+# Note allowPrivilegeEscalation is allowed in baseline mode
 cat <<EOF | kubectl -n verify-pod-security apply -f -
 apiVersion: v1
 kind: Pod
