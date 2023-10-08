@@ -16,24 +16,25 @@ jobs:
       - name: Stop apparmor
         run: |
           sudo /etc/init.d/apparmor stop
+      - uses: actions/setup-go@v3
+        with:
+          go-version: '^1.19.2'
       - name: Create k8s/kind cluster
         run: |
-          git clone --depth 1 -b "k8s-1.25.0" --single-branch https://github.com/k8s-school/kind-helper.git
-          ./kind-helper/k8s-create.sh -c calico
-          kubectl get nodes
-          kubectl get pods -n kube-system
+          go install github.com/k8s-school/k8s-toolbox@v1.0.0-rc1
+          k8s-toolbox create -s
       - name: Run test on internals
         run: |
           ./1_internals/ci.sh
       - name: Run test on authorization
         run: |
           ./2_authorization/ci.sh
-      - name: Run test on policies 
+      - name: Run test on policies
         run: |
           ./3_policies/ci.sh
       - name: Run test on computational resources
         run: |
           ./4_computational_resources/ci.sh
-      - name: Install prometheus 
+      - name: Install prometheus
         run: |
           ./B_prometheus/install.sh
