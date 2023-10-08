@@ -22,7 +22,7 @@ jobs:
       - name: Create k8s/kind cluster
         run: |
           go install github.com/k8s-school/k8s-toolbox@v1.0.0-rc1
-          k8s-toolbox create -s
+          k8s-toolbox create -c
       - name: Run test on internals
         run: |
           ./1_internals/ci.sh
