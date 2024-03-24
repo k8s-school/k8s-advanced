@@ -5,6 +5,9 @@ set -euxo pipefail
 DIR=$(cd "$(dirname "$0")"; pwd -P)
 . "$DIR/../env.sh"
 
+
+# This file might block apt-update
+sudo rm -f /etc/apt/sources.list.d/kubernetes.list
 sudo apt-get update -q
 
 cat <<EOF | sudo tee /etc/modules-load.d/containerd.conf
