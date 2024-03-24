@@ -1,4 +1,4 @@
-KUBEADM_VERSION="1.28.6-00"
+KUBEADM_VERSION="1.29.3-1.1"
 
 # Current version
 # KUBEADM_VERSION="1.25.2-00"
@@ -6,8 +6,8 @@ KUBEADM_VERSION="1.28.6-00"
 # apt-cache madison kubeadm
 
 # Required for update procedure
-BUMP_KUBEADM="1.29.1-00"
-BUMP_K8S="v1.29.1"
+BUMP_KUBEADM="1.29.3-1.1"
+BUMP_K8S="v1.29.3"
 
 # Remove debconf messages
 export TERM="linux"
