@@ -37,9 +37,9 @@ kubectl  wait --for=condition=Ready pods "$POD"
 
 if timeout --foreground 3 kubectl exec -it "$POD" -- top
 then
-    echo "WARN: 'top' has exited for unknow reason"
+    ink -y "WARN: 'top' has exited for unknow reason"
 else
-    echo "Exiting from 'top' command"
+    ink "Exiting from 'top' command"
 fi
 
 # INSPECTING A NODE’S CAPACITY
@@ -84,16 +84,16 @@ kubectl  wait --for=condition=Ready pods "$POD"
 kubectl describe pod "$POD"
 if timeout 3 kubectl exec -it "$POD" -- top
 then
-    echo "WARN: 'top' has exited for unknow reason"
+    ink -y "WARN: 'top' has exited for unknow reason"
 else
-    echo "Exiting from 'top' command"
+    ink "Exiting from 'top' command"
 fi
 
 # LimitRange
 kubectl apply -f $DIR/manifest/local-storage-class.yaml
 kubectl apply -f "$KUBIA_DIR"/Chapter14/limits.yaml
 kubectl apply -f "$KUBIA_DIR"/Chapter14/limits-pod-too-big.yaml && \
-    >&2 echo "ERROR this command should have failed"
+    ink -r "ERROR this command should have failed"
 kubectl apply -f "$KUBIA_DIR"/Chapter03/kubia-manual.yaml
 
 # ResourceQuota

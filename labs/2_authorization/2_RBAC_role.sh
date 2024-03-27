@@ -8,37 +8,39 @@ set -x
 
 DIR=$(cd "$(dirname "$0")"; pwd -P)
 
+. $DIR/../conf.version.sh
+
 # Delete all namespaces with label 'RBAC=role' to make current script idempotent
 kubectl delete ns -l RBAC=role
 
 # Create namespaces 'foo' and 'bar' and add label "RBAC=role"
-kubectl create namespace foo
+kubectl create ns foo
 kubectl create ns bar
 kubectl label ns foo bar "RBAC=role"
 
-# Create a deployment and its related service in ns 'foo'
+ink "Create a deployment and its related service in ns 'foo'"
 # for example use image gcr.io/kuar-demo/kuard-amd64:green
 kubectl create deployment kuard --image=gcr.io/kuar-demo/kuard-amd64:green -n foo
 kubectl expose deployment kuard -n foo --type=NodePort --port=8080 --name=kuard-service
 
-# Create pod using image 'k8sschool/kubectl-proxy:1.15.3', and named 'shell' in ns 'bar'
-kubectl run shell --image=k8sschool/kubectl-proxy:1.15.3 -n bar
+ink "Create pod using image 'k8sschool/kubectl-proxy', and named 'shell' in ns 'bar'"
+kubectl run shell --image=k8sschool/kubectl-proxy:$KUBECTL_PROXY_VERSION -n bar
 
-# Wait for pod bar:shell to be in running state
+ink "Wait for pod bar:shell to be in running state"
 kubectl wait -n bar --for=condition=Ready pods shell
 
-# Access svc 'foo:kuard-service' from pod 'bar:shell'
+ink "Access svc 'foo:kuard-service' from pod 'bar:shell'"
 while ! kubectl exec -it -n bar shell -- curl --connect-timeout 2 http://kuard-service.foo:8080
 do
-    echo "Waiting for kuard svc"
+    ink "Waiting for kuard svc"
     sleep 2
 done
-# Set the namespace preference to 'foo'
-# so that all kubectl command are ran in ns 'foo' by default
+ink "Set the namespace preference to 'foo'"
+ink "so that all kubectl command are ran in ns 'foo' by default"
 kubectl config set-context $(kubectl config current-context) --namespace=foo
 
-# Create pod using image 'k8sschool/kubectl-proxy:1.15.3', and named 'shell' in ns 'foo'
-kubectl run shell --image=k8sschool/kubectl-proxy:1.15.3
+ink "Create pod using image 'k8sschool/kubectl-proxy', and named 'shell' in ns 'foo'"
+kubectl run shell --image=k8sschool/kubectl-proxy:$KUBECTL_PROXY_VERSION
 
 # Wait for foo:shell to be in running state
 kubectl  wait --for=condition=Ready pods shell

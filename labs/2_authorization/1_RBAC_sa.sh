@@ -31,7 +31,7 @@ echo
 kubectl delete pod curl-custom-sa
 
 # Create secret for this SA (no longer needed since k8S 1.24)
-echo "WARNING: security exposure of persisting a non-expiring token credential in a readable API object"
+ink -y "WARNING: security exposure of persisting a non-expiring token credential in a readable API object"
 FOO_TOKEN="foo-token"
 cat <<EOF | kubectl apply -f -
 apiVersion: v1
@@ -64,5 +64,5 @@ echo
 # If RBAC is enabled, it should not be able to list anything
 kubectl exec -it curl-custom-sa -c main -- curl localhost:8001/api/v1/pods
 
-echo "Non mandatory, check expiry date on https://jwt.io/"
+ink "Non mandatory, check expiry date on https://jwt.io/"
 kubectl create token foo

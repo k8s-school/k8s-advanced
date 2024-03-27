@@ -8,16 +8,19 @@ set -x
 
 DIR=$(cd "$(dirname "$0")"; pwd -P)
 
+. $DIR/../conf.version.sh
+
 NS="baz"
 
 # Delete all namespaces, clusterrole, clusterrolebinding, pv
 # with label 'RBAC=role' to make current script idempotent
+kubectl delete ns -l RBAC=clusterrole
 kubectl delete pv,ns,clusterrole,clusterrolebinding -l RBAC=clusterrole
 
 # Create namespace '$NS' in yaml, with label "RBAC=clusterrole"
 cat <<EOF >/tmp/ns_$NS.yaml
 apiVersion: v1
-kind: Namespace
+kind: Namespace 
 metadata:
   name: $NS
   labels:
@@ -71,8 +74,8 @@ kubectl create clusterrole pv-reader --verb=get,list --resource=persistentvolume
 # Add label "RBAC=clusterrole"
 kubectl label clusterrole pv-reader "RBAC=clusterrole"
 
-# Create pod using image 'k8sschool/kubectl-proxy:1.15.3', and named 'shell' in ns '$NS'
-kubectl run shell --image=k8sschool/kubectl-proxy:1.15.3 -n $NS
+# Create pod using image 'k8sschool/kubectl-proxy', and named 'shell' in ns '$NS'
+kubectl run shell --image=k8sschool/kubectl-proxy:$KUBECTL_PROXY_VERSION -n $NS
 
 # Wait for $NS:shell to be in running state
 while true
@@ -91,7 +94,7 @@ kubectl exec -it -n $NS shell -- curl localhost:8001/api/v1/persistentvolumes
 kubectl create rolebinding pv-reader --clusterrole=pv-reader --serviceaccount=$NS:default -n $NS
 
 # List again persistentvolumes at the cluster scope, with user "system:serviceaccount:$NS:default"
-kubectl exec -it -n $NS shell curl localhost:8001/api/v1/persistentvolumes
+kubectl exec -it -n $NS shell -- curl localhost:8001/api/v1/persistentvolumes
 
 # Why does it not work? Find the solution.
 kubectl delete rolebinding pv-reader -n $NS

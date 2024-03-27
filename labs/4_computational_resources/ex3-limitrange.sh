@@ -18,11 +18,11 @@ kubectl delete pod constraints-cpu-demo --namespace="$NS"
 
 # Attempt to create a Pod that exceeds the maximum CPU constraint 
 kubectl apply -f https://k8s.io/examples/admin/resource/cpu-constraints-pod-2.yaml --namespace="$NS" || \
-    >&2 echo "EXPECTED ERROR: pod cpu request is below limitrange"
+    ink -y "EXPECTED ERROR: pod cpu request is below limitrange"
 
 # Attempt to create a Pod that does not meet the minimum CPU request
 kubectl apply -f https://k8s.io/examples/admin/resource/cpu-constraints-pod-3.yaml --namespace="$NS" || \
-    >&2 echo "EXPECTED ERROR: pod cpu request is below limitrange"
+    ink -y "EXPECTED ERROR: pod cpu request is below limitrange"
 
 # Create a Pod that does not specify any CPU request or limit 
 kubectl apply -f https://k8s.io/examples/admin/resource/cpu-constraints-pod-4.yaml --namespace="$NS"
