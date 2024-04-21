@@ -24,3 +24,6 @@ sudo apt-mark unhold kubelet kubectl
 sudo apt-get update -q
 sudo apt-get install -y kubelet="$BUMP_KUBEADM" kubectl="$BUMP_KUBEADM" --allow-downgrades
 sudo apt-mark hold kubelet kubectl
+
+sudo systemctl restart kubelet
+sudo systemctl status kubelet
