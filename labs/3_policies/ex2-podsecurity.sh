@@ -37,7 +37,7 @@ kubectl label --overwrite ns verify-pod-security \
   pod-security.kubernetes.io/enforce=restricted \
   pod-security.kubernetes.io/audit=restricted
 
-# Next, try to deploy a privileged workload in the namespace.
+ink "Next, try to deploy a privileged workload in the namespace $NS"
 if cat <<EOF | kubectl -n verify-pod-security apply -f -
 apiVersion: v1
 kind: Pod
@@ -46,7 +46,7 @@ metadata:
 spec:
   containers:
   - name: busybox
-    image: busybox
+    image: busybox:$BUSYBOX_VERSION
     args:
     - sleep
     - "1000000"
@@ -68,6 +68,7 @@ kubectl label --overwrite ns verify-pod-security \
 
 # Next, try to deploy a workload in the namespace.
 # Note allowPrivilegeEscalation is allowed in baseline mode
+ink "Try to create a pod with allowPrivilegeEscalation: true in namespace $NS"
 cat <<EOF | kubectl -n verify-pod-security apply -f -
 apiVersion: v1
 kind: Pod
@@ -76,7 +77,7 @@ metadata:
 spec:
   containers:
   - name: busybox
-    image: busybox
+    image: busybox:$BUSYBOX_VERSION
     args:
     - sleep
     - "1000000"
@@ -98,6 +99,7 @@ kubectl label --overwrite ns verify-pod-security \
 
 # Apply the workload.
 
+ink "Try to create a pod with allowPrivilegeEscalation: false and capabilities NET_BIND_SERVICE, CHOWN in namespace $NS"
 if cat <<EOF | kubectl -n verify-pod-security apply -f -
 apiVersion: v1
 kind: Pod
@@ -106,7 +108,7 @@ metadata:
 spec:
   containers:
   - name: busybox
-    image: busybox
+    image: busybox:$BUSYBOX_VERSION
     args:
     - sleep
     - "1000000"
@@ -121,7 +123,7 @@ then
     ink -r "ERROR: Should not be able to create privileged pod in namespace $NS"
     exit 1
 else
-    ink -y "EXPECTED ERROR: No able to create privileged pod in namespace $NS"
+    ink -y "EXPECTED ERROR: No able to create pod with capabilities NET_BIND_SERVICE, CHOWN in namespace $NS"
 fi
 
 # Let's apply the baseline Pod Security level and try again.
@@ -131,6 +133,7 @@ kubectl label --overwrite ns verify-pod-security \
   pod-security.kubernetes.io/warn=restricted \
   pod-security.kubernetes.io/audit=restricted
 
+ink "Try to create a pod with allowPrivilegeEscalation: false and capabilities NET_BIND_SERVICE, CHOWN in namespace $NS"
 if cat <<EOF | kubectl -n verify-pod-security apply -f -
 apiVersion: v1
 kind: Pod
@@ -139,7 +142,7 @@ metadata:
 spec:
   containers:
   - name: busybox
-    image: busybox
+    image: busybox:$BUSYBOX_VERSION
     args:
     - sleep
     - "1000000"
@@ -151,7 +154,7 @@ spec:
           - CHOWN
 EOF
 then
-    ink "Create privileged pod in namespace $NS"
+    ink "Create pod with capabilities NET_BIND_SERVICE, CHOWN in namespace $NS"
 else
     ink -r "ERROR: No able to create privileged pod in namespace $NS"
     exit 1
@@ -174,7 +177,7 @@ metadata:
 spec:
   containers:
   - name: busybox
-    image: busybox
+    image: busybox:$BUSYBOX_VERSION
     args:
     - sleep
     - "1000000"
@@ -189,7 +192,7 @@ then
     ink -r "ERROR: Should not be able to create privileged pod in namespace $NS"
     exit 1
 else
-    ink -y "EXPECTED ERROR: No able to create privileged pod in namespace $NS"
+    ink -y "EXPECTED ERROR: No able to create pod with capabilities NET_BIND_SERVICE, CHOWN in namespace $NS"
 fi
 
 if cat <<EOF | kubectl -n "$NS" apply -f -
@@ -202,7 +205,7 @@ spec:
     runAsUser: 65534
   containers:
   - name: busybox
-    image: busybox
+    image: busybox:$BUSYBOX_VERSION
     args:
     - sleep
     - "1000000"
@@ -220,7 +223,7 @@ EOF
 then
     ink "Create pod in namespace $NS"
 else
-    ink -r "ERROR: No able to create pod in namespace $NS"
+    ink -r "ERROR: No able to create pod with capabilities NET_BIND_SERVICE in namespace $NS"
     exit 1
 fi
 
