@@ -1,6 +1,4 @@
-# Qserv operator CI workflow
----
-name: "CI"
+name: "Integration tests"
 on:
   push:
   pull_request:
