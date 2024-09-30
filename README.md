@@ -9,3 +9,5 @@
 [Shared framapad](https://annuel.framapad.org/p/k8s-school?lang=en)
 
 All slides are [on our website](https://www.k8s-school.fr/pdf)
+
+Happy k8s!
