@@ -115,7 +115,7 @@ kubectl apply -n office -f https://k8s.io/examples/pods/storage/pv-pod.yaml
 kubectl  wait --for=condition=Ready -n office --timeout=180s pods task-pv-pod
 
 # Launch a command in task-pv-pod
-kubectl exec -it task-pv-pod echo "SUCCESS in lauching command in task-pv-pod"
+kubectl exec -it task-pv-pod -- echo "SUCCESS in lauching command in task-pv-pod"
 
 # Switch back to context kubernetes-admin@kubernetes
 kubectl config use-context "$KIND_CONTEXT"
