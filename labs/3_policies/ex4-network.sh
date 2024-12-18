@@ -160,7 +160,7 @@ kubectl exec -n "$NS" webserver -- netcat -q 2 -zv pgsql-postgresql 5432
 set +x
 ink "webserver to external pod"
 set -x
-if kubectl exec -n "$NS" webserver -- netcat -q 2 -nzv $EXTERNAL_IP 80
+if kubectl exec -n "$NS" webserver -- netcat -w 3 -nzv $EXTERNAL_IP 80
 then
     set +x
     ink -r "ERROR this connection should have failed"
@@ -174,7 +174,7 @@ fi
 set +x
 ink "external pod to database"
 set -x
-if kubectl exec -n "$NS" external -- netcat -w 2 -zv pgsql-postgresql 5432
+if kubectl exec -n "$NS" external -- netcat -w 3 -zv pgsql-postgresql 5432
 then
     set +x
     ink -r "ERROR this connection should have failed"
@@ -188,7 +188,7 @@ fi
 set +x
 ink "external pod to outside world"
 set -x
-if kubectl exec -n "$NS" external -- netcat -w 2 -zv www.k8s-school.fr 80
+if kubectl exec -n "$NS" external -- netcat -w 3 -zv www.k8s-school.fr 80
 then
     set +x
     ink -r "ERROR this connection should have failed"

@@ -37,7 +37,7 @@ do
 done
 ink "Set the namespace preference to 'foo'"
 ink "so that all kubectl command are ran in ns 'foo' by default"
-kubectl config set-context $(kubectl config current-context) --namespace=foo
+kubectl config set-context --current --namespace=foo
 
 ink "Create pod using image 'k8sschool/kubectl-proxy', and named 'shell' in ns 'foo'"
 kubectl run shell --image=k8sschool/kubectl-proxy:$KUBECTL_PROXY_VERSION

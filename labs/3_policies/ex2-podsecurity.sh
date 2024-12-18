@@ -209,14 +209,18 @@ spec:
     args:
     - sleep
     - "1000000"
+    # Required for restricted level
     securityContext:
       seccompProfile:
         type: RuntimeDefault
+    ###
       runAsNonRoot: true
       allowPrivilegeEscalation: false
+      # Required for restricted level
       capabilities:
         drop:
           - ALL
+      ###
         add:
           - NET_BIND_SERVICE
 EOF
