@@ -3,7 +3,7 @@ kind: Pod
 metadata:
   name: curl-custom-sa
 spec:
-  serviceAccountName: foo
+  serviceAccountName: default
   containers:
   - name: main
     image: curlimages/curl
