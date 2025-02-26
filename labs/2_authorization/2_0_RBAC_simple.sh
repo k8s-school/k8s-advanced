@@ -20,8 +20,10 @@ BAR_NAMESPACE="bar-${ID}"
 
 PROXY_POD="curl-custom-sa"
 
-ink "Creating namespaces..."
+ink "Cleanup"
 kubectl delete namespace -l lab=rbac
+
+ink "Creating namespaces..."
 kubectl create namespace "$FOO_NAMESPACE"
 kubectl create namespace "$BAR_NAMESPACE"
 kubectl label namespace "$FOO_NAMESPACE" lab=rbac
@@ -90,6 +92,6 @@ kubectl patch rolebindings.rbac.authorization.k8s.io -n $FOO_NAMESPACE service-r
     -p='[{"op": "add", "path": "/subjects/-", "value": {"kind": "ServiceAccount","name": "default","namespace": "'$BAR_NAMESPACE'"} }]'
 
 ink "List service in ns 'foo' with service account bar:default"
-kubectl run $PROXY_POD --image=k8sschool/kubectl-proxy:$KUBECTL_PROXY_VERSION -n $BAR_NAMESPACE
-kubectl wait --for=condition=ready pod -n "$FOO_NAMESPACE" --timeout=60s $PROXY_POD
+kubectl run -n $BAR_NAMESPACE $PROXY_POD --image=k8sschool/kubectl-proxy:$KUBECTL_PROXY_VERSION
+kubectl wait -n "$BAR_NAMESPACE" --for=condition=ready pod --timeout=60s $PROXY_POD
 kubectl exec -it -n $BAR_NAMESPACE $PROXY_POD -- curl localhost:8001/api/v1/namespaces/$FOO_NAMESPACE/services
