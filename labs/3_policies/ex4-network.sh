@@ -133,15 +133,17 @@ fi
 set +x
 ink "Enable DNS access, see https://docs.projectcalico.org/v3.7/security/advanced-policy#5-allow-dns-egress-traffic"
 set -x
-kubectl apply -n "$NS" -f $DIR/resource/allow-dns-access.yaml
-
+# See https://kubernetes.io/docs/concepts/services-networking/network-policies/#default-policies
+kubectl apply -n "$NS" -f $DIR/resource/default-deny.yaml
 # Edit original file, replace app with tier
 kubectl apply -n "$NS" -f $DIR/resource/ingress-www-db.yaml
 # Edit original file, replace app with tier
 kubectl apply -n "$NS" -f $DIR/resource/egress-www-db.yaml
 ink "Set default deny network policies"
-# See https://kubernetes.io/docs/concepts/services-networking/network-policies/#default-policies
-kubectl apply -n "$NS" -f $DIR/resource/default-deny.yaml
+
+kubectl apply -n "$NS" -f $DIR/resource/allow-dns-access.yaml
+
+
 
 set +x
 ink "Check what happen with network policies defined"
