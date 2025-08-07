@@ -62,6 +62,8 @@ sudo chown $(id -u):$(id -g) $HOME/.kube/config
 # Enable auto-completion
 echo 'source <(kubectl completion bash)' >> ~/.bashrc
 
+$DIR/wait-for-master.sh
+
 # Install CNI plugin
 # See https://projectcalico.docs.tigera.io/getting-started/kubernetes/quickstart
 kubectl create -f https://raw.githubusercontent.com/projectcalico/calico/v3.24.5/manifests/tigera-operator.yaml
