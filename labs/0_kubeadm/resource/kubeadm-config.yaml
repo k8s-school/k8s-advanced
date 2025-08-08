@@ -11,10 +11,6 @@ apiServer:
   timeoutForControlPlane: 4m0s
 certificatesDir: /etc/kubernetes/pki
 clusterName: kubernetes
-kubernetesVersion: v1.29.3
+kubernetesVersion: v1.32.7
 # Current version:
 # kubernetesVersion: v1.26.1
-networking:
-  # See https://projectcalico.docs.tigera.io/getting-started/kubernetes/quickstart
-  podSubnet: 192.168.0.0/16
-  serviceSubnet: 10.96.0.0/12

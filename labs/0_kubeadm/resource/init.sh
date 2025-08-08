@@ -65,10 +65,8 @@ echo 'source <(kubectl completion bash)' >> ~/.bashrc
 $DIR/wait-for-master.sh
 
 # Install CNI plugin
-# See https://projectcalico.docs.tigera.io/getting-started/kubernetes/quickstart
-#kubectl create -f https://raw.githubusercontent.com/projectcalico/calico/v3.29.5/manifests/tigera-operator.yaml
-#kubectl create -f https://raw.githubusercontent.com/projectcalico/calico/v3.29.5/manifests/custom-resources.yaml
-exit 0
+$DIR/install-cilium.sh
+
 kubectl wait --for=condition=ready --timeout=-1s nodes $(hostname) 
 
 # Update kubeconfig with users alice and bob
