@@ -10,7 +10,7 @@ for i in $(seq 1 2); do
   INSTANCE_NAME="k8s-$i"
   echo "Creating instance $INSTANCE_NAME..."
 
-  scw instance server create zone="fr-par-1" image=$DISTRIBUTION type="$INSTANCE_TYPE" ip="$ip_id" name=$INSTANCE_NAME
+  scw instance server create zone="fr-par-1" image=$DISTRIBUTION type="$INSTANCE_TYPE" name=$INSTANCE_NAME
   instance_id=$(scw instance server list | grep $INSTANCE_NAME | awk '{print $1}')
   ip_address=$(scw instance server wait "$instance_id" | grep PublicIP.Address | awk '{print $2}')
 
