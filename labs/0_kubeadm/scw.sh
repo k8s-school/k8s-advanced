@@ -5,12 +5,48 @@ set -euxo pipefail
 
 INSTANCE_TYPE="DEV1-L"
 DISTRIBUTION="ubuntu_noble"
+INSTANCE_COUNT=2
+INSTANCE_PREFIX="k8s-"
+DELETE_INSTANCE=false
 
-for i in $(seq 1 2); do
-  INSTANCE_NAME="k8s-$i"
+usage() {
+  echo "Usage: $0 [-d]"
+  echo "  -d    Delete existing instances with the prefix '$INSTANCE_PREFIX'"
+  echo "  No options will create tw instances with the prefix '$INSTANCE_PREFIX'"
+  exit 1
+}
+
+# Add option to delete existing instances with optargs
+while getopts ":hd" opt; do
+  case $opt in
+    d)
+      DELETE_INSTANCE=true
+      ;;
+    h)
+      usage
+      ;;
+    \?)
+      echo "Invalid option: -$OPTARG" >&2
+      exit 1
+      ;;
+  esac
+done
+
+# If DELETE_INSTANCE is set, delete the specified instance
+if [ "$DELETE_INSTANCE" = true ]; then
+  for instance in $(scw instance server list | grep "$INSTANCE_PREFIX" | awk '{print $1}'); do
+    echo "Deleting instance $instance..."
+    scw instance server terminate "$instance"
+    echo "WARN: IP address not deleted for instance $instance. Please delete it manually if needed."
+  done
+  exit 0
+fi
+
+for i in $(seq 1 $INSTANCE_COUNT); do
+  INSTANCE_NAME="${INSTANCE_PREFIX}${i}"
   echo "Creating instance $INSTANCE_NAME..."
 
-  scw instance server create zone="fr-par-1" image=$DISTRIBUTION type="$INSTANCE_TYPE" name=$INSTANCE_NAME
+  scw instance server create zone="fr-par-1" image=$DISTRIBUTION type="$INSTANCE_TYPE"  name=$INSTANCE_NAME
   instance_id=$(scw instance server list | grep $INSTANCE_NAME | awk '{print $1}')
   ip_address=$(scw instance server wait "$instance_id" | grep PublicIP.Address | awk '{print $2}')
 
@@ -37,4 +73,16 @@ for i in $(seq 1 2); do
   fi
 
   echo "Updated ~/.ssh/config for $INSTANCE_NAME"
+
+done
+
+
+for i in $(seq 1 $INSTANCE_COUNT); do
+  INSTANCE_NAME="${INSTANCE_PREFIX}${i}"
+  # Remove the instance's public key from known_hosts if it exists
+  ssh-keygen -R "$INSTANCE_NAME" 2>/dev/null
+
+  # Add the instance's public key to known_hosts
+  echo "Adding $INSTANCE_NAME to known_hosts..."
+  ssh-keyscan -H "$INSTANCE_NAME" >> ~/.ssh/known_hosts
 done
