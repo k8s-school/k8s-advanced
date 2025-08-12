@@ -36,9 +36,10 @@ done
 if [ "$DELETE_INSTANCE" = true ]; then
   for instance_id in $(scw instance server list | grep "$INSTANCE_PREFIX" | awk '{print $1}'); do
     echo "Deleting instance $instance_id..."
-    scw instance server terminate "$instance_id"
     ip_address=$(scw instance server wait "$instance_id" | grep PublicIP.Address | awk '{print $2}')
-    scw instance ip delete "$instance_id"
+    scw instance server terminate "$instance_id"
+    scw instance ip delete "$ip_address"
+    echo "Instance $instance_id deleted."
   done
   exit 0
 fi
