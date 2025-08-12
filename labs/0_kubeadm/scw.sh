@@ -34,10 +34,11 @@ done
 
 # If DELETE_INSTANCE is set, delete the specified instance
 if [ "$DELETE_INSTANCE" = true ]; then
-  for instance in $(scw instance server list | grep "$INSTANCE_PREFIX" | awk '{print $1}'); do
-    echo "Deleting instance $instance..."
-    scw instance server terminate "$instance"
-    echo "WARN: IP address not deleted for instance $instance. Please delete it manually if needed."
+  for instance_id in $(scw instance server list | grep "$INSTANCE_PREFIX" | awk '{print $1}'); do
+    echo "Deleting instance $instance_id..."
+    scw instance server terminate "$instance_id"
+    ip_address=$(scw instance server wait "$instance_id" | grep PublicIP.Address | awk '{print $2}')
+    scw instance ip delete "$instance_id"
   done
   exit 0
 fi
@@ -76,13 +77,15 @@ for i in $(seq 1 $INSTANCE_COUNT); do
 
 done
 
-
 for i in $(seq 1 $INSTANCE_COUNT); do
   INSTANCE_NAME="${INSTANCE_PREFIX}${i}"
-  # Remove the instance's public key from known_hosts if it exists
-  ssh-keygen -R "$INSTANCE_NAME" 2>/dev/null
+  instance_id=$(scw instance server list | grep $INSTANCE_NAME | awk '{print $1}')
+  ip_address=$(scw instance server wait "$instance_id" | grep PublicIP.Address | awk '{print $2}')
+
+  # Remove the instance public key from known_hosts
+  ssh-keygen -f "$HOME/.ssh/known_hosts" -R "$ip_address"
 
   # Add the instance's public key to known_hosts
   echo "Adding $INSTANCE_NAME to known_hosts..."
-  ssh-keyscan -H "$INSTANCE_NAME" >> ~/.ssh/known_hosts
+  ssh-keyscan -H "$ip_address" >> ~/.ssh/known_hosts
 done

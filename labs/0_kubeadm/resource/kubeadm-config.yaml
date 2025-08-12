@@ -1,33 +1,3 @@
-apiVersion: kubeadm.k8s.io/v1beta4
-bootstrapTokens:
-- groups:
-  - system:bootstrappers:kubeadm:default-node-token
-  token: 878bkh.157a9gsjtrjqx6st
-  ttl: 24h0m0s
-  usages:
-  - signing
-  - authentication
-kind: InitConfiguration
-localAPIEndpoint:
-  advertiseAddress: 172.16.31.68
-  bindPort: 6443
-nodeRegistration:
-  criSocket: unix:///var/run/containerd/containerd.sock
-  imagePullPolicy: IfNotPresent
-  imagePullSerial: true
-  name: harbor-kub2
-  taints:
-  - effect: NoSchedule
-    key: node-role.kubernetes.io/control-plane
-timeouts:
-  controlPlaneComponentHealthCheck: 4m0s
-  discovery: 5m0s
-  etcdAPICall: 2m0s
-  kubeletHealthCheck: 4m0s
-  kubernetesAPICall: 1m0s
-  tlsBootstrap: 5m0s
-  upgradeManifests: 5m0s
----
 apiServer:
   extraArgs:
   - name: enable-admission-plugins
@@ -39,21 +9,10 @@ apiServer:
     mountPath: /etc/kubernetes/auth
     name: tokens
 apiVersion: kubeadm.k8s.io/v1beta4
-caCertificateValidityPeriod: 87600h0m0s
-certificateValidityPeriod: 8760h0m0s
-certificatesDir: /etc/kubernetes/pki
 clusterName: kubernetes
-controllerManager: {}
-dns: {}
-encryptionAlgorithm: RSA-2048
-etcd:
-  local:
-    dataDir: /var/lib/etcd
 imageRepository: registry.k8s.io
 kind: ClusterConfiguration
 kubernetesVersion: v1.32.7
 networking:
   dnsDomain: cluster.local
   serviceSubnet: 10.96.0.0/12
-proxy: {}
-scheduler: {}
