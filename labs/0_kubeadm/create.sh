@@ -38,8 +38,7 @@ DIR=$(cd "$(dirname "$0")"; pwd -P)
 echo "Copy scripts to all nodes"
 echo "-------------------------"
 
-parallel --tag --joblog parallel.log --halt now,fail=1 \
-  rsync -avz -e "$SSH" "$DIR/resource" $USER@{}:/tmp ::: "$MASTER" $NODES
+parallel --tag -- $SCP --recurse "$DIR/resource" $USER@{}:/tmp ::: "$MASTER" $NODES
 
 echo "Install prerequisites"
 echo "---------------------"
