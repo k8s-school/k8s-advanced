@@ -89,7 +89,7 @@ EOF
 
 # Helm
 #
-HELM_VERSION=3.9.0
+HELM_VERSION=3.16.12
 wget -O /tmp/helm.tgz https://get.helm.sh/helm-v${HELM_VERSION}-linux-amd64.tar.gz
 cd /tmp
 tar zxvf /tmp/helm.tgz
