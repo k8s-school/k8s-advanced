@@ -30,7 +30,7 @@ while true; do
     exit 1
   fi
 
-  NOT_READY=$(kubectl get pods -n kube-system --no-headers 2>/dev/null | grep -vE 'Running|Completed|STATUS' | wc -l)
+  NOT_READY=$(kubectl get pods -n kube-system -l tier=control-plane --no-headers 2>/dev/null | grep -vE 'Running|Completed|STATUS' | wc -l)
 
   if [ "$NOT_READY" -eq 0 ]; then
     echo "✅ All kube-system pods are ready."

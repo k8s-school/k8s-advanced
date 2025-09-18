@@ -62,12 +62,14 @@ sudo chown $(id -u):$(id -g) $HOME/.kube/config
 # Enable auto-completion
 echo 'source <(kubectl completion bash)' >> ~/.bashrc
 
-$DIR/wait-for-master.sh
 
 # Install CNI plugin
 $DIR/install-cilium.sh
 
-kubectl wait --for=condition=ready --timeout=-1s nodes $(hostname) 
+$DIR/wait-for-master.sh
+
+
+kubectl wait --for=condition=ready --timeout=-1s nodes $(hostname)
 
 # Update kubeconfig with users alice and bob
 USER=alice
