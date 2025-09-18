@@ -56,6 +56,10 @@ sudo apt-get install -y containerd.io
 sudo mkdir -p /etc/containerd
 containerd config default | sudo tee /etc/containerd/config.toml
 
+# Set cgroup driver to systemd
+# See https://kubernetes.io/docs/setup/production-environment/container-runtimes/#containerd
+sudo sed -i 's/SystemdCgroup = false/SystemdCgroup = true/' /etc/containerd/config.toml
+
 # Restart containerd
 sudo systemctl restart containerd
 
