@@ -4,10 +4,13 @@
 set -euxo pipefail
 
 INSTANCE_TYPE="DEV1-L"
+INSTANCE_TYPE="GP1-S"
 DISTRIBUTION="ubuntu_noble"
 INSTANCE_COUNT=2
 INSTANCE_PREFIX="k8s-"
 DELETE_INSTANCE=false
+
+user=ubuntu
 
 usage() {
   echo "Usage: $0 [-d]"
@@ -55,7 +58,7 @@ for i in $(seq 1 $INSTANCE_COUNT); do
   CONFIG=~/.ssh/config
   HOST_ENTRY="Host $INSTANCE_NAME"
   HOSTNAME_LINE="  HostName $ip_address"
-  USER_LINE="  User ubuntu"
+  USER_LINE="  User $user"
 
   # Update ~/.ssh/config to add the new instance
   if grep -q "^Host $INSTANCE_NAME\$" "$CONFIG"; then
@@ -85,8 +88,12 @@ for i in $(seq 1 $INSTANCE_COUNT); do
 
   # Remove the instance public key from known_hosts
   ssh-keygen -f "$HOME/.ssh/known_hosts" -R "$ip_address"
-
-  # Add the instance's public key to known_hosts
+  until ssh -o "StrictHostKeyChecking no" $user@"$ip_address" true 2> /dev/null
+    do
+      echo "Waiting for sshd on $ip_address..."
+      sleep 5
+  done
   echo "Adding $INSTANCE_NAME to known_hosts..."
-  ssh-keyscan -H "$ip_address" >> ~/.ssh/known_hosts
+  ssh-keyscan -v -H "$ip_address" >> ~/.ssh/known_hosts
 done
+
