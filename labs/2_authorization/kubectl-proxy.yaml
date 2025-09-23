@@ -6,7 +6,7 @@ spec:
   serviceAccountName: default
   containers:
   - name: main
-    image: curlimages/curl:8.12.1
+    image: curlimages/curl:8.16.0
     command: ["sleep", "9999999"]
   - name: ambassador
     image: k8sschool/kubectl-proxy:1.27.3
