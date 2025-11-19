@@ -6,7 +6,7 @@ on:
       - master
 jobs:
   main:
-    name: Run k8s advanced exercices
+    name: Run k8s advanced labs
     runs-on: ubuntu-22.04
     steps:
       - name: Checkout code
