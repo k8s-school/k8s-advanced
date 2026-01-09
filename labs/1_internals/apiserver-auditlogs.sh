@@ -114,13 +114,13 @@ modify_api_server_manifest() {
     docker exec "$CONTROL_PLANE_CONTAINER" mkdir -p /var/log/kubernetes
 
     # Use Python to modify the YAML
-    python3 << 'EOF'
+    python3 << EOF
 import yaml
 import sys
 
 try:
     # Read the backup file
-    with open("/home/fjammes/src/github.com/k8s-school/k8s-school-labs/kube-apiserver.yaml.backup", 'r') as f:
+    with open("${ORIGINAL_MANIFEST_BACKUP}", 'r') as f:
         data = yaml.safe_load(f)
 
     # Add audit command flags
