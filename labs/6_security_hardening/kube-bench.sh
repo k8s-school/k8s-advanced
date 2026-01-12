@@ -484,40 +484,45 @@ EOF"
     echo "kubectl exec etcd-cks-control-plane -n kube-system -- etcdctl get /registry/secrets/default/SECRET_NAME --endpoints=https://127.0.0.1:2379 --cacert=/etc/kubernetes/pki/etcd/ca.crt --cert=/etc/kubernetes/pki/etcd/peer.crt --key=/etc/kubernetes/pki/etcd/peer.key"
     echo ""
 
-    local secret1_data secret2_data
-    secret1_data=$(kubectl exec etcd-cks-control-plane -n kube-system -- etcdctl get /registry/secrets/default/test-encryption-demo-1 \
-        --endpoints=https://127.0.0.1:2379 \
-        --cacert=/etc/kubernetes/pki/etcd/ca.crt \
-        --cert=/etc/kubernetes/pki/etcd/peer.crt \
-        --key=/etc/kubernetes/pki/etcd/peer.key 2>/dev/null || echo "etcd_read_error")
+    # Use temporary files to avoid null byte warnings with binary data
+    local temp1="/tmp/secret1_data.$$" temp2="/tmp/secret2_data.$$"
 
-    secret2_data=$(kubectl exec etcd-cks-control-plane -n kube-system -- etcdctl get /registry/secrets/default/test-encryption-demo-2 \
+    kubectl exec etcd-cks-control-plane -n kube-system -- etcdctl get /registry/secrets/default/test-encryption-demo-1 \
         --endpoints=https://127.0.0.1:2379 \
         --cacert=/etc/kubernetes/pki/etcd/ca.crt \
         --cert=/etc/kubernetes/pki/etcd/peer.crt \
-        --key=/etc/kubernetes/pki/etcd/peer.key 2>/dev/null || echo "etcd_read_error")
+        --key=/etc/kubernetes/pki/etcd/peer.key 2>/dev/null > "$temp1" || echo "etcd_read_error" > "$temp1"
+
+    kubectl exec etcd-cks-control-plane -n kube-system -- etcdctl get /registry/secrets/default/test-encryption-demo-2 \
+        --endpoints=https://127.0.0.1:2379 \
+        --cacert=/etc/kubernetes/pki/etcd/ca.crt \
+        --cert=/etc/kubernetes/pki/etcd/peer.crt \
+        --key=/etc/kubernetes/pki/etcd/peer.key 2>/dev/null > "$temp2" || echo "etcd_read_error" > "$temp2"
 
     echo "Secret 1 data from etcd (first 200 chars):"
-    echo "$secret1_data" | head -c 200 | tr '\0' '.'
+    head -c 200 "$temp1" | tr '\0' '.'
     echo "..."
     echo ""
 
     echo "Secret 2 data from etcd (first 200 chars):"
-    echo "$secret2_data" | head -c 200 | tr '\0' '.'
+    head -c 200 "$temp2" | tr '\0' '.'
     echo "..."
     echo ""
 
-    if echo "$secret1_data" | grep -q "plaintext-data-1"; then
+    if grep -q "plaintext-data-1" "$temp1" 2>/dev/null; then
         echo "✅ Secret 1: PLAINTEXT VISIBLE in etcd (as expected - no encryption yet)"
     else
         echo "❓ Secret 1: NOT PLAINTEXT (unexpected or read error)"
     fi
 
-    if echo "$secret2_data" | grep -q "plaintext-data-2"; then
+    if grep -q "plaintext-data-2" "$temp2" 2>/dev/null; then
         echo "✅ Secret 2: PLAINTEXT VISIBLE in etcd (as expected - no encryption yet)"
     else
         echo "❓ Secret 2: NOT PLAINTEXT (unexpected or read error)"
     fi
+
+    # Clean up temporary files
+    rm -f "$temp1" "$temp2"
 
     echo ""
     echo "=========================================="
@@ -667,66 +672,71 @@ EOF_PYTHON'
     echo ""
 
     # Check the ORIGINAL secrets (should now be unencrypted still until re-encrypted)
-    local original_secret1_data original_secret2_data
-    original_secret1_data=$(kubectl exec etcd-cks-control-plane -n kube-system -- etcdctl get /registry/secrets/default/test-encryption-demo-1 \
-        --endpoints=https://127.0.0.1:2379 \
-        --cacert=/etc/kubernetes/pki/etcd/ca.crt \
-        --cert=/etc/kubernetes/pki/etcd/peer.crt \
-        --key=/etc/kubernetes/pki/etcd/peer.key 2>/dev/null || echo "etcd_read_error")
+    local orig_temp1="/tmp/orig_secret1.$$" orig_temp2="/tmp/orig_secret2.$$"
 
-    original_secret2_data=$(kubectl exec etcd-cks-control-plane -n kube-system -- etcdctl get /registry/secrets/default/test-encryption-demo-2 \
+    kubectl exec etcd-cks-control-plane -n kube-system -- etcdctl get /registry/secrets/default/test-encryption-demo-1 \
         --endpoints=https://127.0.0.1:2379 \
         --cacert=/etc/kubernetes/pki/etcd/ca.crt \
         --cert=/etc/kubernetes/pki/etcd/peer.crt \
-        --key=/etc/kubernetes/pki/etcd/peer.key 2>/dev/null || echo "etcd_read_error")
+        --key=/etc/kubernetes/pki/etcd/peer.key 2>/dev/null > "$orig_temp1" || echo "etcd_read_error" > "$orig_temp1"
+
+    kubectl exec etcd-cks-control-plane -n kube-system -- etcdctl get /registry/secrets/default/test-encryption-demo-2 \
+        --endpoints=https://127.0.0.1:2379 \
+        --cacert=/etc/kubernetes/pki/etcd/ca.crt \
+        --cert=/etc/kubernetes/pki/etcd/peer.crt \
+        --key=/etc/kubernetes/pki/etcd/peer.key 2>/dev/null > "$orig_temp2" || echo "etcd_read_error" > "$orig_temp2"
 
     echo "Original Secret 1 data from etcd AFTER encryption config (should still be plaintext until re-encrypted):"
-    echo "$original_secret1_data" | head -c 200 | tr '\0' '.'
+    head -c 200 "$orig_temp1" | tr '\0' '.'
     echo "..."
     echo ""
 
     # Check new secrets created AFTER encryption (should be encrypted)
-    local post_secret1_data post_secret2_data
-    post_secret1_data=$(kubectl exec etcd-cks-control-plane -n kube-system -- etcdctl get /registry/secrets/default/post-encryption-demo-1 \
-        --endpoints=https://127.0.0.1:2379 \
-        --cacert=/etc/kubernetes/pki/etcd/ca.crt \
-        --cert=/etc/kubernetes/pki/etcd/peer.crt \
-        --key=/etc/kubernetes/pki/etcd/peer.key 2>/dev/null || echo "etcd_read_error")
+    local post_temp1="/tmp/post_secret1.$$" post_temp2="/tmp/post_secret2.$$"
 
-    post_secret2_data=$(kubectl exec etcd-cks-control-plane -n kube-system -- etcdctl get /registry/secrets/default/post-encryption-demo-2 \
+    kubectl exec etcd-cks-control-plane -n kube-system -- etcdctl get /registry/secrets/default/post-encryption-demo-1 \
         --endpoints=https://127.0.0.1:2379 \
         --cacert=/etc/kubernetes/pki/etcd/ca.crt \
         --cert=/etc/kubernetes/pki/etcd/peer.crt \
-        --key=/etc/kubernetes/pki/etcd/peer.key 2>/dev/null || echo "etcd_read_error")
+        --key=/etc/kubernetes/pki/etcd/peer.key 2>/dev/null > "$post_temp1" || echo "etcd_read_error" > "$post_temp1"
+
+    kubectl exec etcd-cks-control-plane -n kube-system -- etcdctl get /registry/secrets/default/post-encryption-demo-2 \
+        --endpoints=https://127.0.0.1:2379 \
+        --cacert=/etc/kubernetes/pki/etcd/ca.crt \
+        --cert=/etc/kubernetes/pki/etcd/peer.crt \
+        --key=/etc/kubernetes/pki/etcd/peer.key 2>/dev/null > "$post_temp2" || echo "etcd_read_error" > "$post_temp2"
 
     echo "NEW Secret 1 (created AFTER encryption) data from etcd:"
-    echo "$post_secret1_data" | head -c 200 | tr '\0' '.'
+    head -c 200 "$post_temp1" | tr '\0' '.'
     echo "..."
     echo ""
 
     echo "NEW Secret 2 (created AFTER encryption) data from etcd:"
-    echo "$post_secret2_data" | head -c 200 | tr '\0' '.'
+    head -c 200 "$post_temp2" | tr '\0' '.'
     echo "..."
     echo ""
 
     # Analyze the results
-    if echo "$original_secret1_data" | grep -q "plaintext-data-1"; then
+    if grep -q "plaintext-data-1" "$orig_temp1" 2>/dev/null; then
         echo "⚠️  Original Secret 1: STILL PLAINTEXT (expected - not re-encrypted yet)"
     else
         echo "✅ Original Secret 1: NO LONGER PLAINTEXT"
     fi
 
-    if echo "$post_secret1_data" | grep -q "plaintext-after-encryption-1"; then
+    if grep -q "plaintext-after-encryption-1" "$post_temp1" 2>/dev/null; then
         echo "❌ NEW Secret 1: PLAINTEXT VISIBLE (encryption FAILED!)"
     else
         echo "✅ NEW Secret 1: ENCRYPTED (plaintext not visible)"
     fi
 
-    if echo "$post_secret2_data" | grep -q "plaintext-after-encryption-2"; then
+    if grep -q "plaintext-after-encryption-2" "$post_temp2" 2>/dev/null; then
         echo "❌ NEW Secret 2: PLAINTEXT VISIBLE (encryption FAILED!)"
     else
         echo "✅ NEW Secret 2: ENCRYPTED (plaintext not visible)"
     fi
+
+    # Clean up temporary files
+    rm -f "$orig_temp1" "$orig_temp2" "$post_temp1" "$post_temp2"
 
     echo ""
     echo "=========================================="
@@ -747,23 +757,27 @@ EOF_PYTHON'
     echo "🔍 Reading ORIGINAL secrets AFTER re-encryption (should now be encrypted):"
     echo ""
 
-    local reencrypted_secret1_data
-    reencrypted_secret1_data=$(kubectl exec etcd-cks-control-plane -n kube-system -- etcdctl get /registry/secrets/default/test-encryption-demo-1 \
+    local reenc_temp="/tmp/reenc_secret1.$$"
+
+    kubectl exec etcd-cks-control-plane -n kube-system -- etcdctl get /registry/secrets/default/test-encryption-demo-1 \
         --endpoints=https://127.0.0.1:2379 \
         --cacert=/etc/kubernetes/pki/etcd/ca.crt \
         --cert=/etc/kubernetes/pki/etcd/peer.crt \
-        --key=/etc/kubernetes/pki/etcd/peer.key 2>/dev/null || echo "etcd_read_error")
+        --key=/etc/kubernetes/pki/etcd/peer.key 2>/dev/null > "$reenc_temp" || echo "etcd_read_error" > "$reenc_temp"
 
     echo "Original Secret 1 data AFTER re-encryption:"
-    echo "$reencrypted_secret1_data" | head -c 200 | tr '\0' '.'
+    head -c 200 "$reenc_temp" | tr '\0' '.'
     echo "..."
     echo ""
 
-    if echo "$reencrypted_secret1_data" | grep -q "plaintext-data-1"; then
+    if grep -q "plaintext-data-1" "$reenc_temp" 2>/dev/null; then
         echo "❌ Re-encryption FAILED - still plaintext visible"
     else
         echo "✅ Re-encryption SUCCESS - original secrets now encrypted"
     fi
+
+    # Clean up temporary file
+    rm -f "$reenc_temp"
 
     echo ""
     echo "=========================================="
@@ -806,61 +820,72 @@ verify_etcd_encryption() {
 
     # Create a test secret if none exists
     log_info "Creating test secrets for verification..."
-    kubectl create secret generic encryption-test-1 --from-literal=key1=plaintext-value-1 >/dev/null 2>&1 || true
-    kubectl create secret generic encryption-test-2 --from-literal=key2=plaintext-value-2 >/dev/null 2>&1 || true
+    echo "Creating secret: encryption-test-1"
+    kubectl create secret generic encryption-test-1 --from-literal=key1=plaintext-value-1 2>/dev/null || echo "Secret encryption-test-1 already exists"
+    echo "Creating secret: encryption-test-2"
+    kubectl create secret generic encryption-test-2 --from-literal=key2=plaintext-value-2 2>/dev/null || echo "Secret encryption-test-2 already exists"
 
     # Wait for secrets to be persisted
     sleep 2
 
     # Check encryption status for test secrets
     log_info "Checking encryption status in etcd..."
-    local secret1_status secret2_status
 
-    secret1_status=$(kubectl exec etcd-${CONTROL_PLANE_CONTAINER} -n kube-system -- etcdctl get /registry/secrets/default/encryption-test-1 \
+    # Use temporary files to handle binary data
+    local verify_temp1="/tmp/verify_secret1.$$" verify_temp2="/tmp/verify_secret2.$$"
+
+    kubectl exec etcd-${CONTROL_PLANE_CONTAINER} -n kube-system -- etcdctl get /registry/secrets/default/encryption-test-1 \
         --endpoints=https://127.0.0.1:2379 \
         --cacert=/etc/kubernetes/pki/etcd/ca.crt \
         --cert=/etc/kubernetes/pki/etcd/peer.crt \
-        --key=/etc/kubernetes/pki/etcd/peer.key 2>/dev/null || echo "error_accessing_etcd")
+        --key=/etc/kubernetes/pki/etcd/peer.key 2>/dev/null > "$verify_temp1" || echo "error_accessing_etcd" > "$verify_temp1"
 
-    secret2_status=$(kubectl exec etcd-${CONTROL_PLANE_CONTAINER} -n kube-system -- etcdctl get /registry/secrets/default/encryption-test-2 \
+    kubectl exec etcd-${CONTROL_PLANE_CONTAINER} -n kube-system -- etcdctl get /registry/secrets/default/encryption-test-2 \
         --endpoints=https://127.0.0.1:2379 \
         --cacert=/etc/kubernetes/pki/etcd/ca.crt \
         --cert=/etc/kubernetes/pki/etcd/peer.crt \
-        --key=/etc/kubernetes/pki/etcd/peer.key 2>/dev/null || echo "error_accessing_etcd")
+        --key=/etc/kubernetes/pki/etcd/peer.key 2>/dev/null > "$verify_temp2" || echo "error_accessing_etcd" > "$verify_temp2"
 
     # Analyze results
     echo "=== Etcd Encryption Verification Results ==="
 
-    if [[ "$secret1_status" == "error_accessing_etcd" ]]; then
+    if grep -q "error_accessing_etcd" "$verify_temp1" 2>/dev/null; then
         log_error "Cannot access etcd directly - verification failed"
         echo "Status: Unable to verify encryption"
     else
         # Check if plaintext values are visible in etcd
-        if echo "$secret1_status" | grep -q "plaintext-value-1"; then
-            log_error "Secret 1 is stored in PLAINTEXT in etcd"
-            echo "Secret 1: NOT ENCRYPTED ❌"
+        if grep -q "plaintext-value-1" "$verify_temp1" 2>/dev/null; then
+            log_error "Secret encryption-test-1 is stored in PLAINTEXT in etcd"
+            echo "Secret encryption-test-1: NOT ENCRYPTED ❌"
         else
-            log_success "Secret 1 is encrypted in etcd"
-            echo "Secret 1: ENCRYPTED ✅"
+            log_success "Secret encryption-test-1 is encrypted in etcd"
+            echo "Secret encryption-test-1: ENCRYPTED ✅"
         fi
 
-        if echo "$secret2_status" | grep -q "plaintext-value-2"; then
-            log_error "Secret 2 is stored in PLAINTEXT in etcd"
-            echo "Secret 2: NOT ENCRYPTED ❌"
+        if grep -q "plaintext-value-2" "$verify_temp2" 2>/dev/null; then
+            log_error "Secret encryption-test-2 is stored in PLAINTEXT in etcd"
+            echo "Secret encryption-test-2: NOT ENCRYPTED ❌"
         else
-            log_success "Secret 2 is encrypted in etcd"
-            echo "Secret 2: ENCRYPTED ✅"
+            log_success "Secret encryption-test-2 is encrypted in etcd"
+            echo "Secret encryption-test-2: ENCRYPTED ✅"
         fi
     fi
 
     # Show sample encrypted data (truncated for readability)
-    log_info "Sample etcd data (first 100 chars):"
-    echo "$secret1_status" | head -c 100 | tr '\n' ' '
+    log_info "Sample etcd data for encryption-test-1 (first 100 chars):"
+    head -c 100 "$verify_temp1" | tr '\n' ' '
     echo "..."
 
-    # Clean up test secrets
-    kubectl delete secret encryption-test-1 --ignore-not-found=true >/dev/null 2>&1 || true
-    kubectl delete secret encryption-test-2 --ignore-not-found=true >/dev/null 2>&1 || true
+    echo ""
+    log_info "Test secrets created for verification:"
+    kubectl get secrets encryption-test-1 encryption-test-2 2>/dev/null || echo "Secrets not found"
+
+    echo ""
+    log_info "Note: Test secrets are kept for inspection. Clean up with:"
+    echo "kubectl delete secret encryption-test-1 encryption-test-2"
+
+    # Clean up temporary files only
+    rm -f "$verify_temp1" "$verify_temp2"
 
     echo "============================================="
 }
