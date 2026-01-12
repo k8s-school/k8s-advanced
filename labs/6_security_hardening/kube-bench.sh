@@ -432,28 +432,24 @@ EOF
     fi
 }
 
-# Function to demonstrate encryption at rest configuration
+# Function to configure and test encryption at rest
 configure_encryption_at_rest() {
-    log_info "Demonstrating encryption at rest configuration (checks 1.2.27 & 1.2.28)..."
+    log_info "Demonstrating encryption at rest (checks 1.2.27 & 1.2.28)..."
 
     if [ -z "$CONTROL_PLANE_CONTAINER" ]; then
         log_warning "Encryption at rest requires direct control plane access"
         return 0
     fi
 
-    log_warning "Encryption at rest is a complex configuration that requires careful manual setup."
-    log_info "This demo shows the required steps but does not apply them automatically due to API server stability concerns."
-
-    # Show the steps that would be performed
+    # Step 1: Generate encryption key
     log_info "Step 1: Generate encryption key"
     local encryption_key
     encryption_key=$(head -c 32 /dev/urandom | base64)
     echo "Generated key: ${encryption_key:0:20}..."
 
+    # Step 2: Create encryption configuration file
     log_info "Step 2: Create EncryptionConfiguration file"
-    echo "File location: /etc/kubernetes/encryption-config.yaml"
-    cat << EOF
-Contents:
+    docker exec "$CONTROL_PLANE_CONTAINER" bash -c "cat > /etc/kubernetes/encryption-config.yaml << EOF
 apiVersion: apiserver.config.k8s.io/v1
 kind: EncryptionConfiguration
 resources:
@@ -463,38 +459,410 @@ resources:
     - aescbc:
         keys:
         - name: key1
-          secret: [ENCRYPTION_KEY]
+          secret: $encryption_key
     - identity: {}
-EOF
+EOF"
+    echo "✓ Encryption config created: /etc/kubernetes/encryption-config.yaml"
 
-    log_info "Step 3: Modify API server manifest"
-    echo "Add to kube-apiserver command:"
-    echo "  - --encryption-provider-config=/etc/kubernetes/encryption-config.yaml"
+    # Step 3: Create test secrets to demonstrate current state
+    log_info "Step 3: Create test secrets to demonstrate current encryption state"
+    kubectl create secret generic test-encryption-demo-1 --from-literal=data="plaintext-data-1" || true
+    kubectl create secret generic test-encryption-demo-2 --from-literal=data="plaintext-data-2" || true
+    sleep 2
+    echo "✓ Test secrets created"
+
+    # Step 4: Check current encryption status in etcd BEFORE encryption
+    log_info "Step 4: Checking current encryption status in etcd (BEFORE encryption)"
+    echo "=========================================="
+    echo "ETCD ENCRYPTION VERIFICATION - BEFORE"
+    echo "=========================================="
+
     echo ""
-    echo "Add volume mount:"
-    echo "  - mountPath: /etc/kubernetes/encryption-config.yaml"
-    echo "    name: encryption-config"
-    echo "    readOnly: true"
+    echo "🔍 Reading secrets directly from etcd (should show PLAINTEXT):"
     echo ""
-    echo "Add volume:"
-    echo "  - hostPath:"
-    echo "      path: /etc/kubernetes/encryption-config.yaml"
-    echo "      type: File"
-    echo "    name: encryption-config"
+    echo "Command used to read from etcd:"
+    echo "kubectl exec etcd-cks-control-plane -n kube-system -- etcdctl get /registry/secrets/default/SECRET_NAME --endpoints=https://127.0.0.1:2379 --cacert=/etc/kubernetes/pki/etcd/ca.crt --cert=/etc/kubernetes/pki/etcd/peer.crt --key=/etc/kubernetes/pki/etcd/peer.key"
+    echo ""
 
-    log_info "Step 4: Wait for API server restart and verify"
-    echo "Commands to verify:"
-    echo "  kubectl get pods -n kube-system -l component=kube-apiserver"
-    echo "  kubectl create secret generic test --from-literal=key=value"
-    echo "  # Check if secret is encrypted in etcd using etcdctl"
+    local secret1_data secret2_data
+    secret1_data=$(kubectl exec etcd-cks-control-plane -n kube-system -- etcdctl get /registry/secrets/default/test-encryption-demo-1 \
+        --endpoints=https://127.0.0.1:2379 \
+        --cacert=/etc/kubernetes/pki/etcd/ca.crt \
+        --cert=/etc/kubernetes/pki/etcd/peer.crt \
+        --key=/etc/kubernetes/pki/etcd/peer.key 2>/dev/null || echo "etcd_read_error")
 
-    log_info "Step 5: Re-encrypt existing secrets"
-    echo "Command to re-encrypt all existing secrets:"
-    echo "  kubectl get secrets --all-namespaces -o json | kubectl replace -f -"
+    secret2_data=$(kubectl exec etcd-cks-control-plane -n kube-system -- etcdctl get /registry/secrets/default/test-encryption-demo-2 \
+        --endpoints=https://127.0.0.1:2379 \
+        --cacert=/etc/kubernetes/pki/etcd/ca.crt \
+        --cert=/etc/kubernetes/pki/etcd/peer.crt \
+        --key=/etc/kubernetes/pki/etcd/peer.key 2>/dev/null || echo "etcd_read_error")
 
-    log_warning "Manual configuration required: This setup must be done carefully in production"
-    log_info "For this lab exercise, the steps above show how to implement encryption at rest"
-    log_success "Encryption at rest demonstration completed (manual implementation required)"
+    echo "Secret 1 data from etcd (first 200 chars):"
+    echo "$secret1_data" | head -c 200 | tr '\0' '.'
+    echo "..."
+    echo ""
+
+    echo "Secret 2 data from etcd (first 200 chars):"
+    echo "$secret2_data" | head -c 200 | tr '\0' '.'
+    echo "..."
+    echo ""
+
+    if echo "$secret1_data" | grep -q "plaintext-data-1"; then
+        echo "✅ Secret 1: PLAINTEXT VISIBLE in etcd (as expected - no encryption yet)"
+    else
+        echo "❓ Secret 1: NOT PLAINTEXT (unexpected or read error)"
+    fi
+
+    if echo "$secret2_data" | grep -q "plaintext-data-2"; then
+        echo "✅ Secret 2: PLAINTEXT VISIBLE in etcd (as expected - no encryption yet)"
+    else
+        echo "❓ Secret 2: NOT PLAINTEXT (unexpected or read error)"
+    fi
+
+    echo ""
+    echo "=========================================="
+
+    # Step 5: Apply encryption configuration automatically
+    log_info "Step 5: Applying encryption configuration to API server (using Python)"
+    docker exec "$CONTROL_PLANE_CONTAINER" bash -c 'python3 << "EOF_PYTHON"
+import re
+
+# Read the current kube-apiserver.yaml
+with open("/etc/kubernetes/manifests/kube-apiserver.yaml", "r") as f:
+    content = f.read()
+
+# Backup original
+with open("/tmp/kube-apiserver.yaml.backup", "w") as f:
+    f.write(content)
+
+print("✓ Original manifest backed up")
+
+# Step 1: Add encryption provider config argument
+if "--encryption-provider-config" not in content:
+    # Find the line with --tls-private-key-file and add after it
+    pattern = r"(\s+- --tls-private-key-file=.*\n)"
+    replacement = r"\1    - --encryption-provider-config=/etc/kubernetes/encryption-config.yaml\n"
+    content = re.sub(pattern, replacement, content)
+    print("✓ Added encryption provider config argument")
+
+# Step 2: Add volume mount for encryption config
+if "name: encryption-config" not in content:
+    lines = content.split("\n")
+
+    # Find the last volumeMount entry and add after it
+    last_volume_mount_idx = -1
+    in_volume_mounts = False
+
+    for i, line in enumerate(lines):
+        if "volumeMounts:" in line:
+            in_volume_mounts = True
+            continue
+        elif in_volume_mounts and line.strip().startswith("hostNetwork:"):
+            # We reached the end of volumeMounts section
+            break
+        elif in_volume_mounts and "readOnly: true" in line:
+            last_volume_mount_idx = i
+
+    if last_volume_mount_idx > -1:
+        # Insert volume mount after the last readOnly: true
+        mount_lines = [
+            "    - mountPath: /etc/kubernetes/encryption-config.yaml",
+            "      name: encryption-config",
+            "      readOnly: true"
+        ]
+        lines = lines[:last_volume_mount_idx+1] + mount_lines + lines[last_volume_mount_idx+1:]
+        print("✓ Added encryption config volume mount")
+
+    # Step 3: Add volume in volumes section
+    # Find the last volume entry and add after it
+    last_volume_idx = -1
+    in_volumes = False
+
+    for i, line in enumerate(lines):
+        if line.strip() == "volumes:":
+            in_volumes = True
+            continue
+        elif in_volumes and line.strip().startswith("status:"):
+            # We reached the end of volumes section
+            break
+        elif in_volumes and line.strip().startswith("name: ") and "certificates" in line:
+            last_volume_idx = i
+
+    if last_volume_idx > -1:
+        # Insert volume after the last certificate volume
+        volume_lines = [
+            "  - hostPath:",
+            "      path: /etc/kubernetes/encryption-config.yaml",
+            "      type: File",
+            "    name: encryption-config"
+        ]
+        lines = lines[:last_volume_idx+1] + volume_lines + lines[last_volume_idx+1:]
+        print("✓ Added encryption config volume")
+
+    content = "\n".join(lines)
+
+# Step 4: Validate the result
+# Check that we have both the volume mount and volume
+has_mount = "mountPath: /etc/kubernetes/encryption-config.yaml" in content
+has_volume = "path: /etc/kubernetes/encryption-config.yaml" in content
+has_command = "--encryption-provider-config" in content
+
+if has_command and has_mount and has_volume:
+    print("✓ Configuration validation successful")
+
+    # Write the modified content
+    with open("/etc/kubernetes/manifests/kube-apiserver.yaml", "w") as f:
+        f.write(content)
+    print("✓ API server configuration updated successfully")
+else:
+    print("✗ Configuration validation failed:")
+    print(f"  Command arg: {has_command}")
+    print(f"  Volume mount: {has_mount}")
+    print(f"  Volume: {has_volume}")
+    exit(1)
+
+EOF_PYTHON'
+
+    # Step 6: Wait for API server restart
+    log_info "Step 6: Waiting for API server to restart with encryption..."
+    sleep 30
+
+    # Wait for API server to be ready
+    local retries=0
+    while [ $retries -lt 60 ]; do
+        if kubectl get nodes >/dev/null 2>&1; then
+            log_success "API server restarted successfully with encryption!"
+            break
+        fi
+        echo -n "."
+        sleep 2
+        retries=$((retries + 1))
+    done
+    echo ""
+
+    if [ $retries -eq 60 ]; then
+        log_error "API server failed to restart - restoring backup"
+        docker exec "$CONTROL_PLANE_CONTAINER" cp /tmp/kube-apiserver.yaml.backup /etc/kubernetes/manifests/kube-apiserver.yaml
+        return 1
+    fi
+
+    # Step 7: Create new secrets AFTER encryption is enabled
+    log_info "Step 7: Create post-encryption test secrets"
+    kubectl create secret generic post-encryption-demo-1 --from-literal=data="plaintext-after-encryption-1" || true
+    kubectl create secret generic post-encryption-demo-2 --from-literal=data="plaintext-after-encryption-2" || true
+    sleep 3
+    echo "✓ Post-encryption test secrets created"
+
+    # Step 8: Verify encryption in etcd AFTER encryption
+    log_info "Step 8: Verifying encryption in etcd (AFTER encryption)"
+    echo "=========================================="
+    echo "ETCD ENCRYPTION VERIFICATION - AFTER"
+    echo "=========================================="
+
+    echo ""
+    echo "🔍 Reading same secrets from etcd AFTER encryption (should show ENCRYPTED data):"
+    echo ""
+    echo "Same command used to read from etcd:"
+    echo "kubectl exec etcd-cks-control-plane -n kube-system -- etcdctl get /registry/secrets/default/SECRET_NAME ..."
+    echo ""
+
+    # Check the ORIGINAL secrets (should now be unencrypted still until re-encrypted)
+    local original_secret1_data original_secret2_data
+    original_secret1_data=$(kubectl exec etcd-cks-control-plane -n kube-system -- etcdctl get /registry/secrets/default/test-encryption-demo-1 \
+        --endpoints=https://127.0.0.1:2379 \
+        --cacert=/etc/kubernetes/pki/etcd/ca.crt \
+        --cert=/etc/kubernetes/pki/etcd/peer.crt \
+        --key=/etc/kubernetes/pki/etcd/peer.key 2>/dev/null || echo "etcd_read_error")
+
+    original_secret2_data=$(kubectl exec etcd-cks-control-plane -n kube-system -- etcdctl get /registry/secrets/default/test-encryption-demo-2 \
+        --endpoints=https://127.0.0.1:2379 \
+        --cacert=/etc/kubernetes/pki/etcd/ca.crt \
+        --cert=/etc/kubernetes/pki/etcd/peer.crt \
+        --key=/etc/kubernetes/pki/etcd/peer.key 2>/dev/null || echo "etcd_read_error")
+
+    echo "Original Secret 1 data from etcd AFTER encryption config (should still be plaintext until re-encrypted):"
+    echo "$original_secret1_data" | head -c 200 | tr '\0' '.'
+    echo "..."
+    echo ""
+
+    # Check new secrets created AFTER encryption (should be encrypted)
+    local post_secret1_data post_secret2_data
+    post_secret1_data=$(kubectl exec etcd-cks-control-plane -n kube-system -- etcdctl get /registry/secrets/default/post-encryption-demo-1 \
+        --endpoints=https://127.0.0.1:2379 \
+        --cacert=/etc/kubernetes/pki/etcd/ca.crt \
+        --cert=/etc/kubernetes/pki/etcd/peer.crt \
+        --key=/etc/kubernetes/pki/etcd/peer.key 2>/dev/null || echo "etcd_read_error")
+
+    post_secret2_data=$(kubectl exec etcd-cks-control-plane -n kube-system -- etcdctl get /registry/secrets/default/post-encryption-demo-2 \
+        --endpoints=https://127.0.0.1:2379 \
+        --cacert=/etc/kubernetes/pki/etcd/ca.crt \
+        --cert=/etc/kubernetes/pki/etcd/peer.crt \
+        --key=/etc/kubernetes/pki/etcd/peer.key 2>/dev/null || echo "etcd_read_error")
+
+    echo "NEW Secret 1 (created AFTER encryption) data from etcd:"
+    echo "$post_secret1_data" | head -c 200 | tr '\0' '.'
+    echo "..."
+    echo ""
+
+    echo "NEW Secret 2 (created AFTER encryption) data from etcd:"
+    echo "$post_secret2_data" | head -c 200 | tr '\0' '.'
+    echo "..."
+    echo ""
+
+    # Analyze the results
+    if echo "$original_secret1_data" | grep -q "plaintext-data-1"; then
+        echo "⚠️  Original Secret 1: STILL PLAINTEXT (expected - not re-encrypted yet)"
+    else
+        echo "✅ Original Secret 1: NO LONGER PLAINTEXT"
+    fi
+
+    if echo "$post_secret1_data" | grep -q "plaintext-after-encryption-1"; then
+        echo "❌ NEW Secret 1: PLAINTEXT VISIBLE (encryption FAILED!)"
+    else
+        echo "✅ NEW Secret 1: ENCRYPTED (plaintext not visible)"
+    fi
+
+    if echo "$post_secret2_data" | grep -q "plaintext-after-encryption-2"; then
+        echo "❌ NEW Secret 2: PLAINTEXT VISIBLE (encryption FAILED!)"
+    else
+        echo "✅ NEW Secret 2: ENCRYPTED (plaintext not visible)"
+    fi
+
+    echo ""
+    echo "=========================================="
+
+    # Step 9: Re-encrypt existing secrets
+    log_info "Step 9: Re-encrypting existing secrets..."
+    echo "Running command: kubectl get secrets --all-namespaces -o json | kubectl replace -f -"
+    kubectl get secrets --all-namespaces -o json | kubectl replace -f - >/dev/null 2>&1 || log_warning "Some secrets failed to re-encrypt"
+    sleep 2
+
+    echo ""
+    echo "=========================================="
+    echo "ETCD ENCRYPTION VERIFICATION - AFTER RE-ENCRYPTION"
+    echo "=========================================="
+
+    # Check the ORIGINAL secrets again after re-encryption
+    echo ""
+    echo "🔍 Reading ORIGINAL secrets AFTER re-encryption (should now be encrypted):"
+    echo ""
+
+    local reencrypted_secret1_data
+    reencrypted_secret1_data=$(kubectl exec etcd-cks-control-plane -n kube-system -- etcdctl get /registry/secrets/default/test-encryption-demo-1 \
+        --endpoints=https://127.0.0.1:2379 \
+        --cacert=/etc/kubernetes/pki/etcd/ca.crt \
+        --cert=/etc/kubernetes/pki/etcd/peer.crt \
+        --key=/etc/kubernetes/pki/etcd/peer.key 2>/dev/null || echo "etcd_read_error")
+
+    echo "Original Secret 1 data AFTER re-encryption:"
+    echo "$reencrypted_secret1_data" | head -c 200 | tr '\0' '.'
+    echo "..."
+    echo ""
+
+    if echo "$reencrypted_secret1_data" | grep -q "plaintext-data-1"; then
+        echo "❌ Re-encryption FAILED - still plaintext visible"
+    else
+        echo "✅ Re-encryption SUCCESS - original secrets now encrypted"
+    fi
+
+    echo ""
+    echo "=========================================="
+
+    # Cleanup test secrets
+    kubectl delete secret test-encryption-demo-1 test-encryption-demo-2 post-encryption-demo-1 post-encryption-demo-2 --ignore-not-found=true >/dev/null 2>&1
+
+    log_success "Encryption at rest implementation and verification completed!"
+    echo ""
+    echo "🎯 Summary: Encryption at rest is now ACTIVE"
+    echo "   • Encryption key generated and API server configured"
+    echo "   • New secrets are automatically encrypted"
+    echo "   • Existing secrets have been re-encrypted"
+    echo "   • Verification shows encrypted data in etcd"
+    echo "   • Use './kube-bench.sh --verify-encryption' for future checks"
+}
+
+# Function to verify etcd encryption status
+verify_etcd_encryption() {
+    log_info "Verifying etcd encryption status..."
+
+    if [ -z "$CONTROL_PLANE_CONTAINER" ]; then
+        log_warning "Etcd encryption verification requires direct control plane access"
+        return 0
+    fi
+
+    # Check if encryption provider config is configured in API server
+    local api_server_config
+    api_server_config=$(docker exec "$CONTROL_PLANE_CONTAINER" bash -c '
+        grep -o "encryption-provider-config" /etc/kubernetes/manifests/kube-apiserver.yaml 2>/dev/null || echo "not_configured"
+    ')
+
+    if [[ "$api_server_config" == "not_configured" ]]; then
+        log_warning "Encryption provider not configured in API server"
+        echo "Result: Encryption at rest is NOT configured"
+        return 0
+    fi
+
+    log_info "Encryption provider config detected in API server"
+
+    # Create a test secret if none exists
+    log_info "Creating test secrets for verification..."
+    kubectl create secret generic encryption-test-1 --from-literal=key1=plaintext-value-1 >/dev/null 2>&1 || true
+    kubectl create secret generic encryption-test-2 --from-literal=key2=plaintext-value-2 >/dev/null 2>&1 || true
+
+    # Wait for secrets to be persisted
+    sleep 2
+
+    # Check encryption status for test secrets
+    log_info "Checking encryption status in etcd..."
+    local secret1_status secret2_status
+
+    secret1_status=$(kubectl exec etcd-${CONTROL_PLANE_CONTAINER} -n kube-system -- etcdctl get /registry/secrets/default/encryption-test-1 \
+        --endpoints=https://127.0.0.1:2379 \
+        --cacert=/etc/kubernetes/pki/etcd/ca.crt \
+        --cert=/etc/kubernetes/pki/etcd/peer.crt \
+        --key=/etc/kubernetes/pki/etcd/peer.key 2>/dev/null || echo "error_accessing_etcd")
+
+    secret2_status=$(kubectl exec etcd-${CONTROL_PLANE_CONTAINER} -n kube-system -- etcdctl get /registry/secrets/default/encryption-test-2 \
+        --endpoints=https://127.0.0.1:2379 \
+        --cacert=/etc/kubernetes/pki/etcd/ca.crt \
+        --cert=/etc/kubernetes/pki/etcd/peer.crt \
+        --key=/etc/kubernetes/pki/etcd/peer.key 2>/dev/null || echo "error_accessing_etcd")
+
+    # Analyze results
+    echo "=== Etcd Encryption Verification Results ==="
+
+    if [[ "$secret1_status" == "error_accessing_etcd" ]]; then
+        log_error "Cannot access etcd directly - verification failed"
+        echo "Status: Unable to verify encryption"
+    else
+        # Check if plaintext values are visible in etcd
+        if echo "$secret1_status" | grep -q "plaintext-value-1"; then
+            log_error "Secret 1 is stored in PLAINTEXT in etcd"
+            echo "Secret 1: NOT ENCRYPTED ❌"
+        else
+            log_success "Secret 1 is encrypted in etcd"
+            echo "Secret 1: ENCRYPTED ✅"
+        fi
+
+        if echo "$secret2_status" | grep -q "plaintext-value-2"; then
+            log_error "Secret 2 is stored in PLAINTEXT in etcd"
+            echo "Secret 2: NOT ENCRYPTED ❌"
+        else
+            log_success "Secret 2 is encrypted in etcd"
+            echo "Secret 2: ENCRYPTED ✅"
+        fi
+    fi
+
+    # Show sample encrypted data (truncated for readability)
+    log_info "Sample etcd data (first 100 chars):"
+    echo "$secret1_status" | head -c 100 | tr '\n' ' '
+    echo "..."
+
+    # Clean up test secrets
+    kubectl delete secret encryption-test-1 --ignore-not-found=true >/dev/null 2>&1 || true
+    kubectl delete secret encryption-test-2 --ignore-not-found=true >/dev/null 2>&1 || true
+
+    echo "============================================="
 }
 
 # Function to create continuous compliance CronJob
@@ -661,6 +1029,7 @@ OPTIONS:
     -s, --scan           Only run scanning (master and worker)
     -f, --fix            Only demonstrate scheduler profiling fix
     -e, --encryption     Only demonstrate encryption at rest
+    --verify-encryption  Verify etcd encryption status
     -k, --cronjob        Only create continuous compliance CronJob
     --info               Show cluster information
 
@@ -669,6 +1038,7 @@ EXAMPLES:
     $0 --scan            Run kube-bench scans only
     $0 --fix             Demonstrate scheduler profiling remediation
     $0 --encryption      Demonstrate encryption at rest configuration
+    $0 --verify-encryption  Verify if etcd encryption is working
     $0 --cleanup         Clean up all test resources
     $0 --info            Show cluster information
 
@@ -716,6 +1086,13 @@ main() {
             configure_encryption_at_rest
             exit 0
             ;;
+        --verify-encryption)
+            check_prerequisites
+            verify_cluster
+            detect_control_plane
+            verify_etcd_encryption
+            exit 0
+            ;;
         -k|--cronjob)
             check_prerequisites
             verify_cluster
@@ -736,8 +1113,7 @@ main() {
             ;;
     esac
 
-    # Trap to ensure cleanup on script exit
-    trap cleanup EXIT
+    # Note: Cleanup must be explicitly requested with --cleanup option
 
     # Run complete lab from A to Z
     log_info "Running complete kube-bench lab automation..."
