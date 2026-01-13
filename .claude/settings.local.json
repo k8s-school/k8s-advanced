@@ -3,7 +3,9 @@
     "allow": [
       "Read(//home/fjammes/src/github.com/k8s-school/k8s-school-labs/content/1_Labs/**)",
       "Bash(./labs/6_security_hardening/kube-bench.sh:*)",
-      "Bash(kubectl get jobs:*)"
+      "Bash(kubectl get jobs:*)",
+      "Bash(/tmp/update_weights.sh:*)",
+      "Read(//home/fjammes/src/github.com/k8s-school/k8s-school-labs/content/**)"
     ],
     "deny": [],
     "ask": []
