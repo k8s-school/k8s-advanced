@@ -1,9 +1,44 @@
 #!/bin/bash
-
-# Kubernetes Seccomp Security Profiles Lab Automation
-# This script automates the seccomp security profiles lab
-
 set -euo pipefail
+
+# Parse command line arguments
+CLEANUP=false
+STOP_AFTER_CLUSTER=true
+CLUSTER_NAME="$(whoami)-seccomp-lab"
+
+while [[ $# -gt 0 ]]; do
+    case $1 in
+        -c|--cleanup)
+            CLEANUP=true
+            shift
+            ;;
+        -s|--skip-stop)
+            STOP_AFTER_CLUSTER=false
+            shift
+            ;;
+        -h|--help)
+            echo "Usage: $0 [OPTIONS]"
+            echo "Options:"
+            echo "  -c, --cleanup      Automatically cleanup resources at the end"
+            echo "  -s, --skip-stop    Continue with full tutorial (default: stop after cluster creation)"
+            echo "  -h, --help         Show this help message"
+            echo ""
+            echo "By default, the script stops after cluster creation for manual experimentation."
+            echo "Use -s to run the complete automated tutorial."
+            exit 0
+            ;;
+        *)
+            echo "Unknown option: $1"
+            echo "Use -h or --help for usage information"
+            exit 1
+            ;;
+    esac
+done
+
+echo "=== Kubernetes Seccomp Tutorial ==="
+echo "This script reproduces the official Kubernetes seccomp tutorial"
+echo "Source: https://kubernetes.io/docs/tutorials/security/seccomp/"
+echo
 
 # Colors for output
 RED='\033[0;31m'
@@ -12,559 +47,335 @@ YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
-# Logging functions
-log_info() { echo -e "${BLUE}[INFO]${NC} $1"; }
-log_success() { echo -e "${GREEN}[SUCCESS]${NC} $1"; }
-log_warning() { echo -e "${YELLOW}[WARNING]${NC} $1"; }
-log_error() { echo -e "${RED}[ERROR]${NC} $1"; }
-
-# Configuration
-NAMESPACE="seccomp-test"
-TEST_TIMEOUT=60
-
-# Function to check prerequisites
-check_prerequisites() {
-    log_info "Checking prerequisites..."
-
-    local missing_tools=()
-
-    for tool in kubectl docker jq; do
-        if ! command -v "$tool" &> /dev/null; then
-            missing_tools+=("$tool")
-        fi
-    done
-
-    if [ ${#missing_tools[@]} -ne 0 ]; then
-        log_error "Missing required tools: ${missing_tools[*]}"
-        exit 1
-    fi
-
-    log_success "All prerequisites are available"
+function log_info() {
+    echo -e "${BLUE}[INFO]${NC} $1"
 }
 
-# Function to verify cluster connectivity
-verify_cluster() {
-    log_info "Verifying cluster connectivity..."
-
-    if ! kubectl cluster-info &> /dev/null; then
-        log_error "Cannot connect to Kubernetes cluster"
-        exit 1
-    fi
-
-    local cluster_context=$(kubectl config current-context 2>/dev/null || echo "unknown")
-    log_success "Connected to cluster: $cluster_context"
+function log_success() {
+    echo -e "${GREEN}[SUCCESS]${NC} $1"
 }
 
-# Function to check seccomp support
-check_seccomp_support() {
-    log_info "Checking seccomp support..."
-
-    # Check if seccomp is available on the host
-    if grep -q seccomp /proc/version; then
-        log_success "Seccomp is supported on the host system"
-    else
-        log_warning "Cannot verify seccomp support from host"
-    fi
-
-    # Check if Kubernetes supports seccomp
-    local server_version=$(kubectl version -o json | jq -r '.serverVersion.gitVersion' 2>/dev/null || echo "unknown")
-    log_info "Kubernetes server version: $server_version"
-
-    # All recent Kubernetes versions support seccomp
-    log_success "Kubernetes supports seccomp profiles"
+function log_warning() {
+    echo -e "${YELLOW}[WARNING]${NC} $1"
 }
 
-# Function to setup test environment
-setup_test_environment() {
-    log_info "Setting up test environment..."
-
-    # Create test namespace
-    kubectl create namespace "$NAMESPACE" --dry-run=client -o yaml | kubectl apply -f -
-
-    log_success "Test environment ready"
+function log_error() {
+    echo -e "${RED}[ERROR]${NC} $1"
 }
 
-# Function to test runtime default seccomp
-test_runtime_default_seccomp() {
-    log_info "Testing RuntimeDefault seccomp profile..."
+# Prerequisites check
+log_info "Checking prerequisites..."
+command -v kind >/dev/null 2>&1 || { log_error "kind is not installed"; exit 1; }
+command -v kubectl >/dev/null 2>&1 || { log_error "kubectl is not installed"; exit 1; }
+command -v docker >/dev/null 2>&1 || { log_error "docker is not installed"; exit 1; }
+log_success "All prerequisites are met"
 
-    # Create pod with RuntimeDefault seccomp profile
-    cat << 'EOF' > /tmp/seccomp-runtime-default.yaml
-apiVersion: v1
-kind: Pod
-metadata:
-  name: seccomp-runtime-default
-  namespace: seccomp-test
-spec:
-  securityContext:
-    seccompProfile:
-      type: RuntimeDefault
-  containers:
-  - name: test-container
-    image: busybox:latest
-    command: ["/bin/sh"]
-    args: ["-c", "while true; do sleep 30; done;"]
-EOF
+# Step 1: Create working directory and download profiles
+log_info "Step 1: Setting up seccomp profiles"
+LAB_DIR="$HOME/seccomp_lab"
+PROFILES_PATH="$LAB_DIR/profiles"
+mkdir -p "$PROFILES_PATH"
 
-    kubectl apply -f /tmp/seccomp-runtime-default.yaml
+log_info "Lab directory: $LAB_DIR"
 
-    # Wait for pod to be ready
-    kubectl wait --for=condition=Ready pod/seccomp-runtime-default -n "$NAMESPACE" --timeout="${TEST_TIMEOUT}s"
+log_info "Downloading seccomp profiles from Kubernetes official examples..."
 
-    # Test seccomp is applied
-    log_info "Verifying seccomp profile is applied..."
-    local seccomp_status
-    seccomp_status=$(kubectl exec seccomp-runtime-default -n "$NAMESPACE" -- grep -i seccomp /proc/1/status 2>/dev/null || echo "not found")
+# Base URLs for Kubernetes website examples
+BASE_URL="https://raw.githubusercontent.com/kubernetes/website/main/content/en/examples/pods/security/seccomp/profiles"
+PODS_BASE_URL="https://raw.githubusercontent.com/kubernetes/website/main/content/en/examples/pods/security/seccomp/ga"
 
-    if [[ "$seccomp_status" == *"Seccomp:	2"* ]]; then
-        log_success "RuntimeDefault seccomp profile is active (filtered mode)"
-    else
-        log_warning "Seccomp status: $seccomp_status"
-    fi
-
-    # Test basic operations work
-    log_info "Testing basic operations..."
-    kubectl exec seccomp-runtime-default -n "$NAMESPACE" -- ps aux >/dev/null
-    kubectl exec seccomp-runtime-default -n "$NAMESPACE" -- ls -la >/dev/null
-
-    log_success "Basic operations work with RuntimeDefault profile"
-
-    # Test restricted operations
-    log_info "Testing restricted operations..."
-    if ! kubectl exec seccomp-runtime-default -n "$NAMESPACE" -- mount 2>/dev/null; then
-        log_success "Mount operation properly restricted"
-    else
-        log_warning "Mount operation was not restricted (might be expected in some environments)"
-    fi
-}
-
-# Function to create custom seccomp profile
-create_custom_seccomp_profile() {
-    log_info "Creating custom seccomp profile..."
-
-    # Detect control plane for Kind cluster
-    local current_context=$(kubectl config current-context)
-    if [[ "$current_context" == kind-* ]]; then
-        local cluster_name=$(echo "$current_context" | sed 's/^kind-//')
-        local control_plane_container="${cluster_name}-control-plane"
-
-        # Check if Kind container exists
-        if docker ps --filter "name=${control_plane_container}" --format "{{.Names}}" | grep -q "${control_plane_container}"; then
-            log_info "Setting up custom seccomp profile in Kind cluster..."
-
-            # Create custom seccomp profile
-            local custom_profile='/tmp/custom-seccomp-profile.json'
-            cat > "$custom_profile" << 'EOF'
-{
-  "defaultAction": "SCMP_ACT_ALLOW",
-  "syscalls": [
-    {
-      "names": ["mount", "umount2", "syslog"],
-      "action": "SCMP_ACT_ERRNO"
-    },
-    {
-      "names": ["reboot"],
-      "action": "SCMP_ACT_KILL"
-    }
-  ]
-}
-EOF
-
-            # Copy profile to Kind node
-            docker exec "$control_plane_container" mkdir -p /var/lib/kubelet/seccomp/profiles
-            docker cp "$custom_profile" "$control_plane_container:/var/lib/kubelet/seccomp/profiles/custom-profile.json"
-
-            # Also copy to worker nodes
-            for worker in $(docker ps --filter "name=${cluster_name}-worker" --format "{{.Names}}"); do
-                docker exec "$worker" mkdir -p /var/lib/kubelet/seccomp/profiles
-                docker cp "$custom_profile" "$worker:/var/lib/kubelet/seccomp/profiles/custom-profile.json"
-            done
-
-            log_success "Custom seccomp profile created and distributed"
-            return 0
-        fi
-    fi
-
-    log_warning "Custom seccomp profile creation requires direct node access"
-    log_info "In a real cluster, you would:"
-    log_info "1. Create /var/lib/kubelet/seccomp/profiles/ directory on all nodes"
-    log_info "2. Place custom-profile.json in that directory"
-    log_info "3. Ensure proper file permissions"
-}
-
-# Function to test custom seccomp profile
-test_custom_seccomp_profile() {
-    log_info "Testing custom seccomp profile..."
-
-    # Create pod with custom seccomp profile
-    cat << 'EOF' > /tmp/seccomp-custom-profile.yaml
-apiVersion: v1
-kind: Pod
-metadata:
-  name: seccomp-custom-profile
-  namespace: seccomp-test
-spec:
-  securityContext:
-    seccompProfile:
-      type: Localhost
-      localhostProfile: profiles/custom-profile.json
-  containers:
-  - name: test-container
-    image: busybox:latest
-    command: ["/bin/sh"]
-    args: ["-c", "while true; do sleep 30; done;"]
-EOF
-
-    if kubectl apply -f /tmp/seccomp-custom-profile.yaml 2>/dev/null; then
-        # Wait for pod to be ready or check if it fails
-        if kubectl wait --for=condition=Ready pod/seccomp-custom-profile -n "$NAMESPACE" --timeout="${TEST_TIMEOUT}s" 2>/dev/null; then
-            log_success "Pod with custom seccomp profile is running"
-
-            # Test that mount is blocked
-            log_info "Testing custom restrictions..."
-            if ! kubectl exec seccomp-custom-profile -n "$NAMESPACE" -- mount 2>/dev/null; then
-                log_success "Mount operation blocked by custom profile"
-            else
-                log_warning "Mount operation was not blocked"
-            fi
-        else
-            log_warning "Pod with custom seccomp profile failed to start (profile may not be available)"
-            kubectl describe pod seccomp-custom-profile -n "$NAMESPACE" | tail -10
-        fi
-    else
-        log_warning "Failed to create pod with custom seccomp profile"
-    fi
-}
-
-# Function to test pod security standards integration
-test_pod_security_standards() {
-    log_info "Testing seccomp with Pod Security Standards..."
-
-    # Create restricted namespace
-    cat << 'EOF' > /tmp/restricted-namespace.yaml
-apiVersion: v1
-kind: Namespace
-metadata:
-  name: seccomp-restricted
-  labels:
-    pod-security.kubernetes.io/enforce: restricted
-    pod-security.kubernetes.io/audit: restricted
-    pod-security.kubernetes.io/warn: restricted
-EOF
-
-    kubectl apply -f /tmp/restricted-namespace.yaml
-
-    # Create compliant pod
-    cat << 'EOF' > /tmp/compliant-seccomp-pod.yaml
-apiVersion: v1
-kind: Pod
-metadata:
-  name: compliant-pod
-  namespace: seccomp-restricted
-spec:
-  securityContext:
-    runAsNonRoot: true
-    runAsUser: 1001
-    seccompProfile:
-      type: RuntimeDefault
-  containers:
-  - name: app
-    image: busybox:latest
-    command: ["/bin/sh"]
-    args: ["-c", "while true; do sleep 30; done;"]
-    securityContext:
-      allowPrivilegeEscalation: false
-      readOnlyRootFilesystem: false
-      runAsNonRoot: true
-      runAsUser: 1001
-      capabilities:
-        drop:
-        - ALL
-EOF
-
-    if kubectl apply -f /tmp/compliant-seccomp-pod.yaml; then
-        kubectl wait --for=condition=Ready pod/compliant-pod -n seccomp-restricted --timeout="${TEST_TIMEOUT}s"
-        log_success "Pod compliant with restricted security standards created"
-    else
-        log_error "Failed to create pod compliant with restricted standards"
-    fi
-
-    # Test non-compliant pod (should be rejected)
-    cat << 'EOF' > /tmp/non-compliant-seccomp-pod.yaml
-apiVersion: v1
-kind: Pod
-metadata:
-  name: non-compliant-pod
-  namespace: seccomp-restricted
-spec:
-  containers:
-  - name: app
-    image: busybox:latest
-    command: ["/bin/sh"]
-    args: ["-c", "while true; do sleep 30; done;"]
-    securityContext:
-      privileged: true
-EOF
-
-    if ! kubectl apply -f /tmp/non-compliant-seccomp-pod.yaml 2>/dev/null; then
-        log_success "Non-compliant pod correctly rejected by Pod Security Standards"
-    else
-        log_warning "Non-compliant pod was not rejected (unexpected)"
-        kubectl delete pod non-compliant-pod -n seccomp-restricted --ignore-not-found=true
-    fi
-}
-
-# Function to test container-level seccomp
-test_container_level_seccomp() {
-    log_info "Testing container-level seccomp profiles..."
-
-    cat << 'EOF' > /tmp/container-level-seccomp.yaml
-apiVersion: v1
-kind: Pod
-metadata:
-  name: container-level-seccomp
-  namespace: seccomp-test
-spec:
-  containers:
-  - name: restricted-container
-    image: busybox:latest
-    command: ["/bin/sh"]
-    args: ["-c", "while true; do sleep 30; done;"]
-    securityContext:
-      seccompProfile:
-        type: RuntimeDefault
-  - name: unconfined-container
-    image: busybox:latest
-    command: ["/bin/sh"]
-    args: ["-c", "while true; do sleep 30; done;"]
-    securityContext:
-      seccompProfile:
-        type: Unconfined
-EOF
-
-    kubectl apply -f /tmp/container-level-seccomp.yaml
-    kubectl wait --for=condition=Ready pod/container-level-seccomp -n "$NAMESPACE" --timeout="${TEST_TIMEOUT}s"
-
-    # Test restricted container
-    log_info "Testing restricted container..."
-    local restricted_seccomp
-    restricted_seccomp=$(kubectl exec container-level-seccomp -c restricted-container -n "$NAMESPACE" -- grep -i seccomp /proc/1/status 2>/dev/null || echo "not found")
-
-    if [[ "$restricted_seccomp" == *"Seccomp:	2"* ]]; then
-        log_success "Restricted container has seccomp filtering enabled"
-    else
-        log_warning "Restricted container seccomp status: $restricted_seccomp"
-    fi
-
-    # Test unconfined container
-    log_info "Testing unconfined container..."
-    local unconfined_seccomp
-    unconfined_seccomp=$(kubectl exec container-level-seccomp -c unconfined-container -n "$NAMESPACE" -- grep -i seccomp /proc/1/status 2>/dev/null || echo "not found")
-
-    if [[ "$unconfined_seccomp" == *"Seccomp:	0"* ]]; then
-        log_success "Unconfined container has seccomp disabled"
-    else
-        log_info "Unconfined container seccomp status: $unconfined_seccomp"
-    fi
-
-    log_success "Container-level seccomp configuration working"
-}
-
-# Function to demonstrate seccomp violations
-demonstrate_seccomp_violations() {
-    log_info "Demonstrating seccomp violations..."
-
-    # Use the RuntimeDefault pod for testing
-    if kubectl get pod seccomp-runtime-default -n "$NAMESPACE" >/dev/null 2>&1; then
-        log_info "Testing system calls that may be restricted..."
-
-        # Test various system calls
-        local test_commands=(
-            "ps aux"
-            "ls -la"
-            "cat /proc/version"
-            "mount"
-            "reboot"
-        )
-
-        for cmd in "${test_commands[@]}"; do
-            log_info "Testing command: $cmd"
-            if kubectl exec seccomp-runtime-default -n "$NAMESPACE" -- sh -c "$cmd" >/dev/null 2>&1; then
-                log_info "  ✓ Command succeeded"
-            else
-                log_warning "  ✗ Command failed (may be restricted by seccomp)"
-            fi
-        done
-    else
-        log_warning "RuntimeDefault pod not available for testing"
-    fi
-}
-
-# Function to run diagnostics
-run_diagnostics() {
-    log_info "Running seccomp diagnostics..."
-
-    echo "=== Cluster Information ==="
-    kubectl version --short
-
-    echo -e "\n=== Node Information ==="
-    kubectl get nodes -o wide
-
-    echo -e "\n=== Seccomp Test Pods ==="
-    kubectl get pods -n "$NAMESPACE" -o wide
-
-    echo -e "\n=== Pod Security Standards Namespaces ==="
-    kubectl get ns -l pod-security.kubernetes.io/enforce
-
-    # Check seccomp status of running pods
-    echo -e "\n=== Pod Seccomp Status ==="
-    for pod in $(kubectl get pods -n "$NAMESPACE" -o name | cut -d/ -f2); do
-        echo "Pod: $pod"
-        local status
-        status=$(kubectl exec "$pod" -n "$NAMESPACE" -- grep -i seccomp /proc/1/status 2>/dev/null || echo "not available")
-        echo "  Seccomp status: $status"
-    done
-
-    # Check for seccomp support on nodes
-    echo -e "\n=== Node Seccomp Support ==="
-    local current_context=$(kubectl config current-context)
-    if [[ "$current_context" == kind-* ]]; then
-        local cluster_name=$(echo "$current_context" | sed 's/^kind-//')
-        local control_plane_container="${cluster_name}-control-plane"
-
-        if docker ps --filter "name=${control_plane_container}" --format "{{.Names}}" | grep -q "${control_plane_container}"; then
-            echo "Control plane seccomp support:"
-            docker exec "$control_plane_container" grep -i seccomp /proc/version 2>/dev/null || echo "  Seccomp information not available"
-        fi
-    fi
-}
-
-# Function to cleanup resources
-cleanup() {
-    log_info "Cleaning up test resources..."
-
-    # Delete test namespaces
-    kubectl delete namespace "$NAMESPACE" --ignore-not-found=true
-    kubectl delete namespace seccomp-restricted --ignore-not-found=true
-
-    # Clean up temporary files
-    rm -f /tmp/seccomp-*.yaml /tmp/container-level-seccomp.yaml /tmp/compliant-seccomp-pod.yaml /tmp/non-compliant-seccomp-pod.yaml /tmp/restricted-namespace.yaml /tmp/custom-seccomp-profile.json
-
-    log_success "Cleanup completed"
-}
-
-# Function to show help
-show_help() {
-    cat <<EOF
-Usage: $0 [OPTIONS]
-
-This script automates the Kubernetes seccomp security profiles lab.
-
-OPTIONS:
-    -h, --help        Show this help message
-    -c, --cleanup     Only run cleanup (remove test resources)
-    -d, --diagnostics Only run diagnostics
-    -r, --runtime     Only test RuntimeDefault profile
-    -s, --standards   Only test Pod Security Standards integration
-    -v, --violations  Only demonstrate seccomp violations
-
-EXAMPLES:
-    $0                Run the complete lab
-    $0 --runtime      Test only RuntimeDefault seccomp profile
-    $0 --standards    Test Pod Security Standards integration
-    $0 --violations   Demonstrate seccomp violations
-    $0 --cleanup      Clean up all test resources
-
-EOF
-}
-
-# Main function
-main() {
-    log_info "Starting Kubernetes Seccomp Security Profiles Lab"
-    log_info "================================================"
-
-    case "${1:-}" in
-        -h|--help)
-            show_help
-            exit 0
-            ;;
-        -c|--cleanup)
-            cleanup
-            exit 0
-            ;;
-        -d|--diagnostics)
-            verify_cluster
-            setup_test_environment
-            run_diagnostics
-            exit 0
-            ;;
-        -r|--runtime)
-            check_prerequisites
-            verify_cluster
-            check_seccomp_support
-            setup_test_environment
-            test_runtime_default_seccomp
-            exit 0
-            ;;
-        -s|--standards)
-            check_prerequisites
-            verify_cluster
-            test_pod_security_standards
-            exit 0
-            ;;
-        -v|--violations)
-            check_prerequisites
-            verify_cluster
-            setup_test_environment
-            test_runtime_default_seccomp
-            demonstrate_seccomp_violations
-            exit 0
-            ;;
-        "")
-            # Run complete lab
-            ;;
-        *)
-            log_error "Unknown option: $1"
-            show_help
-            exit 1
-            ;;
-    esac
-
-    # Trap to ensure cleanup on script exit
-    trap cleanup EXIT
-
-    # Run complete lab
-    check_prerequisites
-    verify_cluster
-    check_seccomp_support
-    setup_test_environment
-    test_runtime_default_seccomp
-    create_custom_seccomp_profile
-    test_custom_seccomp_profile
-    test_pod_security_standards
-    test_container_level_seccomp
-    demonstrate_seccomp_violations
-    run_diagnostics
-
-    log_success "=============================================="
-    log_success "Seccomp Security Profiles Lab completed!"
-    log_success "=============================================="
-    log_info "Key achievements:"
-    log_info "- Configured RuntimeDefault seccomp profiles"
-    log_info "- Created and tested custom seccomp profiles"
-    log_info "- Integrated seccomp with Pod Security Standards"
-    log_info "- Demonstrated container-level seccomp configuration"
-    log_info "- Tested seccomp violations and restrictions"
-    log_info ""
-    log_info "Security reminders:"
-    log_info "- Use RuntimeDefault as a baseline for most applications"
-    log_info "- Create custom profiles for applications with specific needs"
-    log_info "- Test thoroughly before applying restrictive profiles"
-    log_info "- Monitor for seccomp violations in production"
-    log_info "- Combine with other security mechanisms (AppArmor, SELinux)"
-}
-
-# Check if script is run directly
-if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
-    main "$@"
+# Download audit profile
+log_info "Command: curl -L -o $PROFILES_PATH/audit.json $BASE_URL/audit.json"
+if curl -L -o "$PROFILES_PATH/audit.json" "$BASE_URL/audit.json"; then
+    log_success "Downloaded audit.json (logs all syscalls)"
+else
+    log_error "Failed to download audit.json"
+    exit 1
 fi
+
+# Download violation profile
+log_info "Command: curl -L -o $PROFILES_PATH/violation.json $BASE_URL/violation.json"
+if curl -L -o "$PROFILES_PATH/violation.json" "$BASE_URL/violation.json"; then
+    log_success "Downloaded violation.json (blocks all syscalls)"
+else
+    log_error "Failed to download violation.json"
+    exit 1
+fi
+
+# Download fine-grained profile
+log_info "Command: curl -L -o $PROFILES_PATH/fine-grained.json $BASE_URL/fine-grained.json"
+if curl -L -o "$PROFILES_PATH/fine-grained.json" "$BASE_URL/fine-grained.json"; then
+    log_success "Downloaded fine-grained.json (allows specific syscalls)"
+else
+    log_error "Failed to download fine-grained.json"
+    exit 1
+fi
+
+# Step 2: Create kind cluster configuration
+log_info "Step 2: Setting up Kubernetes cluster with kind"
+
+cat << EOF > "$LAB_DIR/kind-config.yaml"
+kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+nodes:
+- role: control-plane
+  extraMounts:
+  - hostPath: ${PROFILES_PATH}
+    containerPath: /var/lib/kubelet/seccomp/profiles
+    readOnly: true
+- role: worker
+  extraMounts:
+  - hostPath: ${PROFILES_PATH}
+    containerPath: /var/lib/kubelet/seccomp/profiles
+    readOnly: true
+- role: worker
+  extraMounts:
+  - hostPath: ${PROFILES_PATH}
+    containerPath: /var/lib/kubelet/seccomp/profiles
+    readOnly: true
+EOF
+
+log_info "Creating kind cluster '$CLUSTER_NAME' with 1 control-plane + 2 workers..."
+log_info "Using profiles path: $PROFILES_PATH"
+kind create cluster --config=$LAB_DIR/kind-config.yaml --name "$CLUSTER_NAME"
+
+log_success "Kind cluster created successfully"
+
+# Verify cluster is ready
+log_info "Waiting for cluster to be ready..."
+kubectl wait --for=condition=ready node --all --timeout=60s
+
+if [[ "$STOP_AFTER_CLUSTER" == "true" ]]; then
+    log_success "Cluster created successfully!"
+    echo
+    log_info "=== Manual Experimentation Mode ==="
+    echo "The cluster is ready for manual testing:"
+    echo "  Cluster name: $CLUSTER_NAME"
+    echo "  Lab directory: $LAB_DIR"
+    echo "  Profiles path: $PROFILES_PATH"
+    echo "  kubectl get nodes"
+    echo ""
+    echo "Check profiles on all nodes:"
+    ALL_NODES=$(docker ps --format "{{.Names}}" | grep "${CLUSTER_NAME}-")
+    for NODE in $ALL_NODES; do
+        echo "  docker exec $NODE ls /var/lib/kubelet/seccomp/profiles/"
+    done
+    echo ""
+    echo "To cleanup later: kind delete cluster --name $CLUSTER_NAME"
+    exit 0
+fi
+
+
+# Step 3: Verify seccomp profiles are loaded on all nodes
+log_info "Step 3: Verifying seccomp profiles are available on all nodes"
+
+# Get all nodes in the cluster
+ALL_NODES=$(docker ps --format "{{.Names}}" | grep "${CLUSTER_NAME}-")
+
+if [ -n "$ALL_NODES" ]; then
+    for NODE in $ALL_NODES; do
+        log_info "Checking seccomp profiles on node: $NODE"
+        if docker exec $NODE ls /var/lib/kubelet/seccomp/profiles/ >/dev/null 2>&1; then
+            docker exec $NODE ls -la /var/lib/kubelet/seccomp/profiles/
+            log_success "Seccomp profiles are available on $NODE"
+        else
+            log_error "Seccomp profiles not found on $NODE"
+        fi
+        echo
+    done
+else
+    log_error "Could not find cluster nodes"
+fi
+
+# Step 4: Test RuntimeDefault profile
+log_info "Step 4: Testing RuntimeDefault seccomp profile"
+
+log_info "Command: curl -L -o $LAB_DIR/pod-default.yaml $PODS_BASE_URL/default-pod.yaml"
+if curl -L -o "$LAB_DIR/pod-default.yaml" "$PODS_BASE_URL/default-pod.yaml"; then
+    log_success "Downloaded default-pod.yaml from official examples"
+else
+    log_error "Failed to download default-pod.yaml"
+    exit 1
+fi
+
+log_info "Creating pod with RuntimeDefault seccomp profile..."
+log_info "Command: kubectl apply -f $LAB_DIR/pod-default.yaml"
+kubectl apply -f $LAB_DIR/pod-default.yaml
+
+log_info "Waiting for pod to be ready..."
+log_info "Command: kubectl wait --for=condition=ready pod/default-pod --timeout=30s"
+kubectl wait --for=condition=ready pod/default-pod --timeout=30s
+
+log_info "Pod status:"
+log_info "Command: kubectl get pod default-pod -o wide"
+kubectl get pod default-pod -o wide
+
+# Step 5: Test audit profile
+log_info "Step 5: Testing audit seccomp profile (logs all syscalls)"
+
+log_info "Command: curl -L -o $LAB_DIR/pod-audit.yaml $PODS_BASE_URL/audit-pod.yaml"
+if curl -L -o "$LAB_DIR/pod-audit.yaml" "$PODS_BASE_URL/audit-pod.yaml"; then
+    log_success "Downloaded audit-pod.yaml from official examples"
+else
+    log_error "Failed to download audit-pod.yaml"
+    exit 1
+fi
+
+log_info "Creating pod with audit seccomp profile..."
+log_info "Command: kubectl apply -f $LAB_DIR/pod-audit.yaml"
+kubectl apply -f $LAB_DIR/pod-audit.yaml
+
+log_info "Waiting for pod to be ready..."
+log_info "Command: kubectl wait --for=condition=ready pod/audit-pod --timeout=30s"
+kubectl wait --for=condition=ready pod/audit-pod --timeout=30s
+
+log_info "Checking audit logs for syscall activity:"
+# Find which node the pod is running on
+NODE=$(kubectl get pod audit-pod -o jsonpath='{.spec.nodeName}')
+if [ -n "$NODE" ]; then
+    log_info "Pod is running on node: $NODE"
+    log_info "Command: docker exec $NODE journalctl --since '1 minute ago' | grep -i seccomp"
+
+    # Check for seccomp audit logs on the correct node
+    if docker exec $NODE journalctl --since '1 minute ago' | grep -i seccomp | tail -5; then
+        log_success "Found seccomp audit logs"
+    else
+        log_info "No seccomp-specific audit logs found, checking general kernel logs"
+        log_info "Command: docker exec $NODE dmesg | grep -i seccomp | tail -3"
+        docker exec $NODE dmesg | grep -i seccomp | tail -3 || log_info "No seccomp messages in kernel logs"
+    fi
+else
+    log_error "Could not determine pod node"
+fi
+
+log_info "Generating some syscall activity..."
+log_info "Command: kubectl get pod audit-pod -o wide"
+kubectl get pod audit-pod -o wide
+
+log_info "Command: kubectl logs audit-pod"
+kubectl logs audit-pod 2>/dev/null || log_info "No logs available yet"
+
+# Generate activity that should be logged
+log_info "Triggering syscall activity for audit logging..."
+if kubectl exec audit-pod -- sh -c 'echo "audit test" 2>/dev/null' >/dev/null 2>&1; then
+    log_info "Generated syscall activity"
+
+    # Check logs again after activity
+    sleep 2
+    log_info "Checking for new audit logs after activity..."
+    if [ -n "$NODE" ]; then
+        docker exec $NODE journalctl --since '30 seconds ago' | grep -i seccomp | tail -3 || log_info "No new seccomp logs found"
+    fi
+else
+    log_warning "Could not generate syscall activity - pod may not be ready"
+fi
+
+log_success "Audit profile logs all syscalls (see commands above for detailed log investigation)"
+
+log_info "Creating service for audit pod:"
+log_info "Command: kubectl expose pod audit-pod --type=NodePort --port=5678"
+kubectl expose pod audit-pod --type=NodePort --port=5678
+
+log_info "Testing audit pod service:"
+AUDIT_NODE_PORT=$(kubectl get service audit-pod -o jsonpath='{.spec.ports[0].nodePort}')
+# Get worker node IP using kubectl
+WORKER_IP=$(kubectl get nodes --selector='!node-role.kubernetes.io/control-plane' -o jsonpath='{.items[0].status.addresses[?(@.type=="InternalIP")].address}')
+if [ -z "$WORKER_IP" ]; then
+    WORKER_IP=$(kubectl get nodes -o jsonpath='{.items[0].status.addresses[?(@.type=="InternalIP")].address}')
+fi
+log_info "Command: curl -s http://$WORKER_IP:$AUDIT_NODE_PORT/"
+
+while  ! curl -s http://$WORKER_IP:$AUDIT_NODE_PORT/ >/dev/null 2>&1; do
+    log_info "Waiting for audit pod service to be available..."
+    sleep 3
+done
+
+log_warning "Checking for audit logs generated by service access on host because kind use host kernel"
+if cat /var/log/syslog | grep -i http-echo ; then
+    log_info "Found relevant audit logs in syslog"
+else
+    log_error "No relevant audit logs found in syslog"
+    exit 1
+fi
+
+# Step 6: Test violation profile (blocks all syscalls)
+log_info "Step 6: Testing violation seccomp profile (blocks all syscalls)"
+
+log_info "Command: curl -L -o $LAB_DIR/pod-violation.yaml $PODS_BASE_URL/violation-pod.yaml"
+if curl -L -o "$LAB_DIR/pod-violation.yaml" "$PODS_BASE_URL/violation-pod.yaml"; then
+    log_success "Downloaded violation-pod.yaml from official examples"
+else
+    log_error "Failed to download violation-pod.yaml"
+    exit 1
+fi
+
+log_info "Creating pod with violation seccomp profile (this should fail)..."
+log_info "Command: kubectl apply -f $LAB_DIR/pod-violation.yaml"
+kubectl apply -f $LAB_DIR/pod-violation.yaml
+
+sleep 5
+
+log_info "Checking pod status (should show creation issues):"
+log_info "Command: kubectl get pod violation-pod"
+kubectl get pod violation-pod
+log_info "Command: kubectl describe pod violation-pod | tail -10"
+kubectl describe pod violation-pod | tail -10
+
+log_warning "This pod fails because the violation profile blocks all syscalls"
+
+# Step 7: Test fine-grained profile
+log_info "Step 7: Testing fine-grained seccomp profile (allows specific syscalls only)"
+
+log_info "Command: curl -L -o $LAB_DIR/pod-fine-grained.yaml $PODS_BASE_URL/fine-grained-pod.yaml"
+if curl -L -o "$LAB_DIR/pod-fine-grained.yaml" "$PODS_BASE_URL/fine-grained-pod.yaml"; then
+    log_success "Downloaded fine-grained-pod.yaml from official examples"
+else
+    log_error "Failed to download fine-grained-pod.yaml"
+    exit 1
+fi
+
+log_info "Creating pod with fine-grained seccomp profile..."
+log_info "Command: kubectl apply -f $LAB_DIR/pod-fine-grained.yaml"
+kubectl apply -f $LAB_DIR/pod-fine-grained.yaml
+
+log_info "Waiting for pod to be ready..."
+log_info "Command: kubectl wait --for=condition=ready pod/fine-grained-pod --timeout=30s"
+kubectl wait --for=condition=ready pod/fine-grained-pod --timeout=30s
+
+log_info "Checking pod status:"
+log_info "Command: kubectl get pod fine-grained-pod -o wide"
+kubectl get pod fine-grained-pod -o wide
+
+log_info "Checking if fine-grained profile is working correctly..."
+log_info "Command: kubectl logs fine-grained-pod"
+FINE_GRAINED_LOGS=$(kubectl logs fine-grained-pod 2>&1)
+echo "$FINE_GRAINED_LOGS"
+
+log_info "Creating service for fine-grained pod:"
+log_info "Command: kubectl expose pod fine-grained-pod --type=NodePort --port=5678"
+kubectl expose pod fine-grained-pod --type=NodePort --port=5678
+
+log_info "Testing fine-grained pod service and generating syscalls:"
+FINE_NODE_PORT=$(kubectl get service fine-grained-pod -o jsonpath='{.spec.ports[0].nodePort}')
+# Get worker node IP using kubectl
+WORKER_IP=$(kubectl get nodes --selector='!node-role.kubernetes.io/control-plane' -o jsonpath='{.items[0].status.addresses[?(@.type=="InternalIP")].address}')
+log_info "Command: curl -s http://$WORKER_IP:$FINE_NODE_PORT/"
+curl -s http://$WORKER_IP:$FINE_NODE_PORT/
+
+
+# Step 9: Summary and cleanup
+log_info "Step 9: Summary and cleanup"
+
+echo "=== Tutorial Summary ==="
+echo "1. RuntimeDefault: Uses container runtime's default syscall filtering (~44 blocked syscalls)"
+echo "2. Audit: Logs all syscalls but allows them (good for learning/debugging)"
+echo "3. Violation: Blocks all syscalls (too restrictive for most apps)"
+echo "4. Fine-grained: Custom allowlist of specific syscalls (production-ready approach)"
+echo
+
+
+log_info "Resources preserved. You can continue experimenting!"
+echo "To clean up later, run:"
+echo "  kind delete cluster --name $CLUSTER_NAME"
+echo "  rm -rf $LAB_DIR"
+
