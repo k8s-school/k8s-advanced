@@ -255,21 +255,6 @@ kubectl get pod audit-pod -o wide
 log_info "Command: kubectl logs audit-pod"
 kubectl logs audit-pod 2>/dev/null || log_info "No logs available yet"
 
-# Generate activity that should be logged
-log_info "Triggering syscall activity for audit logging..."
-if kubectl exec audit-pod -- sh -c 'echo "audit test" 2>/dev/null' >/dev/null 2>&1; then
-    log_info "Generated syscall activity"
-
-    # Check logs again after activity
-    sleep 2
-    log_info "Checking for new audit logs after activity..."
-    if [ -n "$NODE" ]; then
-        docker exec $NODE journalctl --since '30 seconds ago' | grep -i seccomp | tail -3 || log_info "No new seccomp logs found"
-    fi
-else
-    log_warning "Could not generate syscall activity - pod may not be ready"
-fi
-
 log_success "Audit profile logs all syscalls (see commands above for detailed log investigation)"
 
 log_info "Creating service for audit pod:"
@@ -326,41 +311,46 @@ log_warning "This pod fails because the violation profile blocks all syscalls"
 # Step 7: Test fine-grained profile
 log_info "Step 7: Testing fine-grained seccomp profile (allows specific syscalls only)"
 
-log_info "Command: curl -L -o $LAB_DIR/pod-fine-grained.yaml $PODS_BASE_URL/fine-grained-pod.yaml"
-if curl -L -o "$LAB_DIR/pod-fine-grained.yaml" "$PODS_BASE_URL/fine-grained-pod.yaml"; then
-    log_success "Downloaded fine-grained-pod.yaml from official examples"
+log_info "Command: curl -L -o $LAB_DIR/fine-pod.yaml $PODS_BASE_URL/fine-pod.yaml"
+if curl -L -o "$LAB_DIR/fine-pod.yaml" "$PODS_BASE_URL/fine-pod.yaml"; then
+    log_success "Downloaded fine-pod.yaml from official examples"
 else
-    log_error "Failed to download fine-grained-pod.yaml"
+    log_error "Failed to download fine-pod.yaml"
     exit 1
 fi
 
 log_info "Creating pod with fine-grained seccomp profile..."
-log_info "Command: kubectl apply -f $LAB_DIR/pod-fine-grained.yaml"
-kubectl apply -f $LAB_DIR/pod-fine-grained.yaml
+log_info "Command: kubectl apply -f $LAB_DIR/fine-pod.yaml"
+kubectl apply -f $LAB_DIR/fine-pod.yaml
 
 log_info "Waiting for pod to be ready..."
-log_info "Command: kubectl wait --for=condition=ready pod/fine-grained-pod --timeout=30s"
-kubectl wait --for=condition=ready pod/fine-grained-pod --timeout=30s
+log_info "Command: kubectl wait --for=condition=ready pod/fine-pod --timeout=30s"
+kubectl wait --for=condition=ready pod/fine-pod --timeout=30s
 
 log_info "Checking pod status:"
-log_info "Command: kubectl get pod fine-grained-pod -o wide"
-kubectl get pod fine-grained-pod -o wide
+log_info "Command: kubectl get pod fine-pod -o wide"
+kubectl get pod fine-pod -o wide
 
 log_info "Checking if fine-grained profile is working correctly..."
-log_info "Command: kubectl logs fine-grained-pod"
-FINE_GRAINED_LOGS=$(kubectl logs fine-grained-pod 2>&1)
+log_info "Command: kubectl logs fine-pod"
+FINE_GRAINED_LOGS=$(kubectl logs fine-pod 2>&1)
 echo "$FINE_GRAINED_LOGS"
 
 log_info "Creating service for fine-grained pod:"
-log_info "Command: kubectl expose pod fine-grained-pod --type=NodePort --port=5678"
-kubectl expose pod fine-grained-pod --type=NodePort --port=5678
+log_info "Command: kubectl expose pod fine-pod --type=NodePort --port=5678"
+kubectl expose pod fine-pod --type=NodePort --port=5678
 
 log_info "Testing fine-grained pod service and generating syscalls:"
-FINE_NODE_PORT=$(kubectl get service fine-grained-pod -o jsonpath='{.spec.ports[0].nodePort}')
+FINE_NODE_PORT=$(kubectl get service fine-pod -o jsonpath='{.spec.ports[0].nodePort}')
 # Get worker node IP using kubectl
 WORKER_IP=$(kubectl get nodes --selector='!node-role.kubernetes.io/control-plane' -o jsonpath='{.items[0].status.addresses[?(@.type=="InternalIP")].address}')
 log_info "Command: curl -s http://$WORKER_IP:$FINE_NODE_PORT/"
-curl -s http://$WORKER_IP:$FINE_NODE_PORT/
+
+while ! curl -s http://$WORKER_IP:$FINE_NODE_PORT/ >/dev/null 2>&1; do
+    log_info "Waiting for fine-grained pod service to be available..."
+    sleep 3
+done
+log_success "Fine-grained seccomp profile is functioning correctly"
 
 
 # Step 9: Summary and cleanup
@@ -372,7 +362,6 @@ echo "2. Audit: Logs all syscalls but allows them (good for learning/debugging)"
 echo "3. Violation: Blocks all syscalls (too restrictive for most apps)"
 echo "4. Fine-grained: Custom allowlist of specific syscalls (production-ready approach)"
 echo
-
 
 log_info "Resources preserved. You can continue experimenting!"
 echo "To clean up later, run:"

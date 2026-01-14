@@ -2,7 +2,7 @@ apiVersion: v1
 kind: Pod
 metadata:
   annotations:
-    kubeadm.kubernetes.io/kube-apiserver.advertise-address.endpoint: 172.18.0.9:6443
+    kubeadm.kubernetes.io/kube-apiserver.advertise-address.endpoint: 172.18.0.3:6443
   labels:
     component: kube-apiserver
     tier: control-plane
@@ -12,11 +12,11 @@ spec:
   containers:
   - command:
     - kube-apiserver
-    - --advertise-address=172.18.0.9
+    - --advertise-address=172.18.0.3
     - --allow-privileged=true
     - --authorization-mode=Node,RBAC
     - --client-ca-file=/etc/kubernetes/pki/ca.crt
-    - --enable-admission-plugins=NodeRestriction,ResourceQuota
+    - --enable-admission-plugins=NodeRestriction
     - --enable-bootstrap-token-auth=true
     - --etcd-cafile=/etc/kubernetes/pki/etcd/ca.crt
     - --etcd-certfile=/etc/kubernetes/pki/apiserver-etcd-client.crt
@@ -40,29 +40,28 @@ spec:
     - --service-cluster-ip-range=10.96.0.0/16
     - --tls-cert-file=/etc/kubernetes/pki/apiserver.crt
     - --tls-private-key-file=/etc/kubernetes/pki/apiserver.key
-    image: registry.k8s.io/kube-apiserver:v1.34.0
+    - --audit-policy-file=/etc/kubernetes/audit-policy.yaml
+    - --audit-log-path=/var/log/kubernetes/audit.log
+    - --audit-log-maxsize=10
+    image: registry.k8s.io/kube-apiserver:v1.31.0
     imagePullPolicy: IfNotPresent
     livenessProbe:
       failureThreshold: 8
       httpGet:
-        host: 172.18.0.9
+        host: 172.18.0.3
         path: /livez
-        port: probe-port
+        port: 6443
         scheme: HTTPS
       initialDelaySeconds: 10
       periodSeconds: 10
       timeoutSeconds: 15
     name: kube-apiserver
-    ports:
-    - containerPort: 6443
-      name: probe-port
-      protocol: TCP
     readinessProbe:
       failureThreshold: 3
       httpGet:
-        host: 172.18.0.9
+        host: 172.18.0.3
         path: /readyz
-        port: probe-port
+        port: 6443
         scheme: HTTPS
       periodSeconds: 1
       timeoutSeconds: 15
@@ -72,9 +71,9 @@ spec:
     startupProbe:
       failureThreshold: 24
       httpGet:
-        host: 172.18.0.9
+        host: 172.18.0.3
         path: /livez
-        port: probe-port
+        port: 6443
         scheme: HTTPS
       initialDelaySeconds: 10
       periodSeconds: 10
@@ -95,6 +94,11 @@ spec:
     - mountPath: /usr/share/ca-certificates
       name: usr-share-ca-certificates
       readOnly: true
+    - mountPath: /etc/kubernetes/audit-policy.yaml
+      name: audit-policy
+      readOnly: true
+    - mountPath: /var/log/kubernetes
+      name: audit-logs
   hostNetwork: true
   priority: 2000001000
   priorityClassName: system-node-critical
@@ -122,4 +126,11 @@ spec:
       path: /usr/share/ca-certificates
       type: DirectoryOrCreate
     name: usr-share-ca-certificates
-status: {}
+  - hostPath:
+      path: /etc/kubernetes/audit-policy.yaml
+      type: File
+    name: audit-policy
+  - hostPath:
+      path: /var/log/kubernetes
+      type: DirectoryOrCreate
+    name: audit-logs

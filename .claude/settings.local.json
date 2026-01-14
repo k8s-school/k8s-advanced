@@ -5,7 +5,8 @@
       "Bash(./labs/6_security_hardening/kube-bench.sh:*)",
       "Bash(kubectl get jobs:*)",
       "Bash(/tmp/update_weights.sh:*)",
-      "Read(//home/fjammes/src/github.com/k8s-school/k8s-school-labs/content/**)"
+      "Read(//home/fjammes/src/github.com/k8s-school/k8s-school-labs/content/**)",
+      "Bash(chmod:*)"
     ],
     "deny": [],
     "ask": []

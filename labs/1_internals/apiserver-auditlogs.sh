@@ -189,8 +189,8 @@ EOF
         docker cp /tmp/kube-apiserver-work.yaml "$CONTROL_PLANE_CONTAINER:/etc/kubernetes/manifests/kube-apiserver.yaml"
         echo "Applied modified manifest"
 
-        # Force kubelet to notice the change
-        docker exec "$CONTROL_PLANE_CONTAINER" touch /etc/kubernetes/manifests/kube-apiserver.yaml
+        echo "Restart kubelet to apply the change quickly"
+        docker exec -- "$CONTROL_PLANE_CONTAINER" systemctl restart kubelet
     else
         echo "✗ Generated manifest has YAML errors"
         log_error "YAML validation failed"
@@ -205,7 +205,10 @@ wait_for_api_server() {
     log_info "Waiting for API server to restart..."
 
     # Wait for the API server pod to be ready
-    kubectl wait --for=condition=Ready pod -l component=kube-apiserver -n kube-system --timeout=60s
+    while ! kubectl get pods >/dev/null 2>&1; do
+        echo "Waiting for API server to be ready..."
+        sleep 10
+    done
 
     log_success "API server is ready"
 }

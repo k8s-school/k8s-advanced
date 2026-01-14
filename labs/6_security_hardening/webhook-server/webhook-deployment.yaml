@@ -1,0 +1,68 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: image-policy-webhook
+  namespace: kube-system
+  labels:
+    app: image-policy-webhook
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: image-policy-webhook
+  template:
+    metadata:
+      labels:
+        app: image-policy-webhook
+    spec:
+      containers:
+      - name: webhook
+        image: image-policy-webhook:latest
+        imagePullPolicy: Never
+        ports:
+        - containerPort: 8080
+          name: webhook-api
+        volumeMounts:
+        - name: webhook-certs
+          mountPath: /etc/webhook-certs
+          readOnly: true
+        - name: webhook-ca
+          mountPath: /etc/webhook-ca
+          readOnly: true
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8080
+            scheme: HTTPS
+          initialDelaySeconds: 10
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8080
+            scheme: HTTPS
+          initialDelaySeconds: 5
+          periodSeconds: 5
+      volumes:
+      - name: webhook-certs
+        secret:
+          secretName: webhook-certs
+      - name: webhook-ca
+        secret:
+          secretName: webhook-ca
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: image-policy-webhook
+  namespace: kube-system
+  labels:
+    app: image-policy-webhook
+spec:
+  selector:
+    app: image-policy-webhook
+  ports:
+  - name: webhook-api
+    port: 443
+    targetPort: 8080
+    protocol: TCP
