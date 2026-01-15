@@ -95,7 +95,7 @@ else
 fi
 
 echo ""
-echo "=== 📋 Analysis SBOM file with trivy
+echo "=== 📋 Analysis SBOM file with trivy"
 trivy sbom nginx-1.19-sbom.json
 
 echo ""
