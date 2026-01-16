@@ -19,10 +19,11 @@ log_warning() { echo -e "${YELLOW}[WARNING]${NC} $1"; }
 log_error() { echo -e "${RED}[ERROR]${NC} $1"; }
 
 # Configuration
-KUBE_BENCH_VERSION="0.9.2"
+KUBE_BENCH_VERSION="v0.14.1"
 NAMESPACE="kube-bench"
 TEST_TIMEOUT=300
 CONTROL_PLANE_CONTAINER=""
+LAB_DIR=$HOME/kube-bench-lab
 
 # Function to check prerequisites
 check_prerequisites() {
@@ -41,33 +42,9 @@ check_prerequisites() {
         exit 1
     fi
 
+    mkdir -p "$LAB_DIR"
+
     log_success "All prerequisites are available"
-}
-
-# Function to detect control plane container for existing cluster
-detect_control_plane() {
-    log_info "Detecting control plane container for existing cluster..."
-
-    local current_context=$(kubectl config current-context 2>/dev/null || echo "unknown")
-
-    if [[ "$current_context" == kind-* ]]; then
-        local cluster_name=$(echo "$current_context" | sed 's/^kind-//')
-        CONTROL_PLANE_CONTAINER="${cluster_name}-control-plane"
-
-        # Verify the container exists
-        if docker ps --filter "name=${CONTROL_PLANE_CONTAINER}" --format "{{.Names}}" | head -1 | grep -q "${CONTROL_PLANE_CONTAINER}"; then
-            log_success "Using Kind cluster with control plane container: $CONTROL_PLANE_CONTAINER"
-            return 0
-        else
-            log_warning "Kind cluster detected but control plane container not found: $CONTROL_PLANE_CONTAINER"
-            log_info "Available control plane containers:"
-            docker ps --format "{{.Names}}" | grep control-plane || echo "None found"
-        fi
-    fi
-
-    log_info "Not a Kind cluster or control plane container not accessible"
-    CONTROL_PLANE_CONTAINER=""
-    return 0
 }
 
 # Function to verify cluster connectivity
@@ -81,18 +58,25 @@ verify_cluster() {
 
     local cluster_context=$(kubectl config current-context 2>/dev/null || echo "unknown")
     log_success "Connected to cluster: $cluster_context"
+
+
+    CONTROL_PLANE_CONTAINER=$(kubectl get nodes -n kube-system -l node-role.kubernetes.io/control-plane= -o jsonpath='{.items[0].metadata.name}')
+
+    # Backup original manifest
+    log_info "Backing up original scheduler manifest..."
+    docker cp "$CONTROL_PLANE_CONTAINER":/etc/kubernetes/manifests/kube-scheduler.yaml $LAB_DIR/kube-scheduler.yaml.orig
 }
 
 # Function to run kube-bench as Job for master node
 run_master_scan() {
     local verification_mode="${1:-false}"
     local job_name="kube-bench-master"
-    local job_file="/tmp/kube-bench-master.yaml"
+    local job_file="$LAB_DIR/kube-bench-master.yaml"
 
     if [[ "$verification_mode" == "true" ]]; then
         log_info "Running verification scan on master node..."
         job_name="kube-bench-master-verification"
-        job_file="/tmp/kube-bench-master-verification.yaml"
+        job_file="$LAB_DIR/kube-bench-master-verification.yaml"
     else
         log_info "Running kube-bench scan on master node..."
     fi
@@ -128,7 +112,7 @@ spec:
         effect: NoSchedule
       containers:
       - name: kube-bench
-        image: aquasec/kube-bench:latest
+        image: aquasec/kube-bench:$KUBE_BENCH_VERSION
         command: ["kube-bench", "run", "--targets", "master"]
         volumeMounts:
         - name: etc-kubernetes
@@ -167,7 +151,7 @@ spec:
         effect: NoSchedule
       containers:
       - name: kube-bench
-        image: aquasec/kube-bench:latest
+        image: aquasec/kube-bench:$KUBE_BENCH_VERSION
         command: ["kube-bench", "run", "--targets", "master"]
         volumeMounts:
         - name: var-lib-etcd
@@ -255,6 +239,7 @@ EOF
                     log_success "Verification passed: Scheduler profiling check now passes!"
                 elif echo "$check_1_4_1_line" | grep -q "\\[FAIL\\]"; then
                     log_error "Verification failed: Scheduler profiling check still fails"
+                    exit 1
                 else
                     log_warning "Verification: Check 1.4.1 status unclear"
                 fi
@@ -268,7 +253,7 @@ EOF
             echo "======================================"
 
             # Save logs for analysis
-            kubectl logs "$pod_name" -n "$NAMESPACE" > /tmp/master-scan-results.log
+            kubectl logs "$pod_name" -n "$NAMESPACE" > $LAB_DIR/master-scan-results.log
 
             # Analyze results
             local pass_count=$(echo "$logs" | grep -c "\\[PASS\\]" || echo "0")
@@ -278,7 +263,7 @@ EOF
             log_info "Master scan results: PASS=$pass_count, FAIL=$fail_count, WARN=$warn_count"
 
             # Check for specific failures we can remediate
-            if grep -q "1.4.1.*\\[FAIL\\]" /tmp/master-scan-results.log; then
+            if grep -q "1.4.1.*\\[FAIL\\]" $LAB_DIR/master-scan-results.log; then
                 log_warning "Found scheduler profiling issue (1.4.1) - will remediate later"
             fi
 
@@ -306,7 +291,7 @@ run_worker_scan() {
     log_info "Selected worker node: $worker_node"
 
     # Create the worker job manifest
-    cat << EOF > /tmp/kube-bench-worker.yaml
+    cat << EOF > $LAB_DIR/kube-bench-worker.yaml
 apiVersion: batch/v1
 kind: Job
 metadata:
@@ -324,7 +309,7 @@ spec:
         kubernetes.io/hostname: $worker_node
       containers:
       - name: kube-bench
-        image: aquasec/kube-bench:latest
+        image: aquasec/kube-bench:$KUBE_BENCH_VERSION
         command: ["kube-bench", "run", "--targets", "node"]
         volumeMounts:
         - name: var-lib-kubelet
@@ -367,7 +352,7 @@ spec:
           path: "/usr/bin"
 EOF
 
-    kubectl apply -f /tmp/kube-bench-worker.yaml
+    kubectl apply -f $LAB_DIR/kube-bench-worker.yaml
 
     log_info "Waiting for worker scan  a complete..."
 
@@ -419,10 +404,6 @@ demonstrate_scheduler_profiling_fix() {
 
     log_info "Current profiling setting: $current_profiling"
 
-    # Backup original manifest
-    log_info "Backing up original scheduler manifest..."
-    docker exec "$CONTROL_PLANE_CONTAINER" cp /etc/kubernetes/manifests/kube-scheduler.yaml /tmp/kube-scheduler.yaml.backup
-
     # Add profiling=false if not present
     log_info "Adding --profiling=false to scheduler configuration..."
     docker exec "$CONTROL_PLANE_CONTAINER" bash -c '
@@ -432,31 +413,28 @@ demonstrate_scheduler_profiling_fix() {
     '
 
     # Wait for scheduler to restart
-    log_info "Waiting for scheduler to restart..."
-    while ! kubectl get pod -n kube-system -l component=kube-scheduler -o jsonpath="{.items[0].metadata.name}" >/dev/null 2>&1; do
+    log_info "Waiting for scheduler to restart and profiling setting to take effect..."
+    while true; do
+        local sched_pod
+        sched_pod=$(kubectl get pod -n kube-system -l component=kube-scheduler -o jsonpath="{.items[0].metadata.name}" 2>/dev/null || echo "")
+        if [ -n "$sched_pod" ]; then
+            new_profiling=$(kubectl get pod -n kube-system -l component=kube-scheduler -o yaml | grep -o "profiling=false" || echo "not set")
+            if [[ "$new_profiling" == "profiling=false" ]]; then
+                break
+            fi
+        fi
         echo -n "."
         sleep 2
     done
-    kubectl wait --for=condition=Ready pod -l component=kube-scheduler -n kube-system --timeout=60s
 
+    log_success "Scheduler profiling successfully disabled"
 
-    # Verify the change
-    local new_profiling
-    new_profiling=$(kubectl get pod -n kube-system -l component=kube-scheduler -o yaml | grep -o "profiling=false" || echo "not set")
+    # Re-run master scan to verify fix
+    log_info "Re-running master scan to verify fix..."
+    kubectl delete jobs -n "$NAMESPACE" -l app=kube-bench,component=master,type=verification --ignore-not-found=true
+    sleep 5
+    run_master_scan true
 
-    if [[ "$new_profiling" == "profiling=false" ]]; then
-        log_success "Scheduler profiling successfully disabled"
-
-        # Re-run master scan to verify fix
-        log_info "Re-running master scan to verify fix..."
-        kubectl delete jobs -n "$NAMESPACE" -l app=kube-bench,component=master,type=verification --ignore-not-found=true
-        sleep 5
-        run_master_scan true
-    else
-        log_error "Failed to disable scheduler profiling, restoring backup"
-        docker exec "$CONTROL_PLANE_CONTAINER" cp /tmp/kube-scheduler.yaml.backup /etc/kubernetes/manifests/kube-scheduler.yaml
-        return 1
-    fi
 }
 
 
@@ -513,7 +491,7 @@ EOF"
     echo ""
 
     # Use temporary files to avoid null byte warnings with binary data
-    local temp1="/tmp/secret1_data.$$" temp2="/tmp/secret2_data.$$"
+    local temp1="$LAB_DIR/secret1_data.$$" temp2="$LAB_DIR/secret2_data.$$"
 
     kubectl exec etcd-cks-control-plane -n kube-system -- etcdctl get /registry/secrets/default/test-encryption-demo-1 \
         --endpoints=https://127.0.0.1:2379 \
@@ -563,12 +541,6 @@ import re
 # Read the current kube-apiserver.yaml
 with open("/etc/kubernetes/manifests/kube-apiserver.yaml", "r") as f:
     content = f.read()
-
-# Backup original
-with open("/tmp/kube-apiserver.yaml.backup", "w") as f:
-    f.write(content)
-
-print("✓ Original manifest backed up")
 
 # Step 1: Add encryption provider config argument
 if "--encryption-provider-config" not in content:
@@ -675,7 +647,7 @@ EOF_PYTHON'
 
     if [ $retries -eq 60 ]; then
         log_error "API server failed to restart - restoring backup"
-        docker exec "$CONTROL_PLANE_CONTAINER" cp /tmp/kube-apiserver.yaml.backup /etc/kubernetes/manifests/kube-apiserver.yaml
+        docker exec "$CONTROL_PLANE_CONTAINER" cp $LAB_DIR/kube-apiserver.yaml.orig /etc/kubernetes/manifests/kube-apiserver.yaml
         return 1
     fi
 
@@ -700,7 +672,7 @@ EOF_PYTHON'
     echo ""
 
     # Check the ORIGINAL secrets (should now be unencrypted still until re-encrypted)
-    local orig_temp1="/tmp/orig_secret1.$$" orig_temp2="/tmp/orig_secret2.$$"
+    local orig_temp1="$LAB_DIR/orig_secret1.$$" orig_temp2="$LAB_DIR/orig_secret2.$$"
 
     kubectl exec etcd-cks-control-plane -n kube-system -- etcdctl get /registry/secrets/default/test-encryption-demo-1 \
         --endpoints=https://127.0.0.1:2379 \
@@ -720,7 +692,7 @@ EOF_PYTHON'
     echo ""
 
     # Check new secrets created AFTER encryption (should be encrypted)
-    local post_temp1="/tmp/post_secret1.$$" post_temp2="/tmp/post_secret2.$$"
+    local post_temp1="$LAB_DIR/post_secret1.$$" post_temp2="$LAB_DIR/post_secret2.$$"
 
     kubectl exec etcd-cks-control-plane -n kube-system -- etcdctl get /registry/secrets/default/post-encryption-demo-1 \
         --endpoints=https://127.0.0.1:2379 \
@@ -785,7 +757,7 @@ EOF_PYTHON'
     echo "🔍 Reading ORIGINAL secrets AFTER re-encryption (should now be encrypted):"
     echo ""
 
-    local reenc_temp="/tmp/reenc_secret1.$$"
+    local reenc_temp="$LAB_DIR/reenc_secret1.$$"
 
     kubectl exec etcd-cks-control-plane -n kube-system -- etcdctl get /registry/secrets/default/test-encryption-demo-1 \
         --endpoints=https://127.0.0.1:2379 \
@@ -860,7 +832,7 @@ verify_etcd_encryption() {
     log_info "Checking encryption status in etcd..."
 
     # Use temporary files to handle binary data
-    local verify_temp1="/tmp/verify_secret1.$$" verify_temp2="/tmp/verify_secret2.$$"
+    local verify_temp1="$LAB_DIR/verify_secret1.$$" verify_temp2="$LAB_DIR/verify_secret2.$$"
 
     kubectl exec etcd-${CONTROL_PLANE_CONTAINER} -n kube-system -- etcdctl get /registry/secrets/default/encryption-test-1 \
         --endpoints=https://127.0.0.1:2379 \
@@ -922,7 +894,7 @@ verify_etcd_encryption() {
 create_continuous_compliance() {
     log_info "Creating CronJob for continuous compliance monitoring..."
 
-    cat << EOF > /tmp/kube-bench-cronjob.yaml
+    cat << EOF > $LAB_DIR/kube-bench-cronjob.yaml
 apiVersion: batch/v1
 kind: CronJob
 metadata:
@@ -947,7 +919,7 @@ spec:
             effect: NoSchedule
           containers:
           - name: kube-bench
-            image: aquasec/kube-bench:latest
+            image: aquasec/kube-bench:$KUBE_BENCH_VERSION
             command: ["kube-bench", "run", "--targets", "master,node"]
             volumeMounts:
             - name: var-lib-etcd
@@ -1009,7 +981,7 @@ spec:
               path: "/usr/bin"
 EOF
 
-    kubectl apply -f /tmp/kube-bench-cronjob.yaml
+    kubectl apply -f $LAB_DIR/kube-bench-cronjob.yaml
     log_success "Weekly compliance monitoring CronJob created"
 
     # Show CronJob status
@@ -1024,7 +996,9 @@ cleanup() {
     kubectl delete namespace "$NAMESPACE" --ignore-not-found=true
 
     # Clean up temporary files
-    rm -f /tmp/kube-bench-*.yaml /tmp/master-scan-results.log
+    if [ -d "$LAB_DIR" ]; then
+        rm -rf $LAB_DIR
+    fi
 
     log_success "Cleanup completed"
 }
@@ -1100,129 +1074,118 @@ EXAMPLES:
 EOF
 }
 
-# Main function
-main() {
-    log_info "Starting kube-bench CIS Kubernetes Benchmark Lab"
-    log_info "================================================"
 
-    case "${1:-}" in
-        -h|--help)
-            show_help
-            exit 0
-            ;;
-        -c|--cleanup)
-            verify_cluster
-            cleanup
-            exit 0
-            ;;
-        -d|--diagnostics)
-            verify_cluster
-            run_diagnostics
-            exit 0
-            ;;
-        -s|--scan)
-            check_prerequisites
-            verify_cluster
-            run_master_scan
-            run_worker_scan
-            exit 0
-            ;;
-        -v|--verify)
-            check_prerequisites
-            verify_cluster
-            run_master_scan true
-            exit 0
-            ;;
-        -f|--fix)
-            check_prerequisites
-            verify_cluster
-            detect_control_plane
-            demonstrate_scheduler_profiling_fix
-            exit 0
-            ;;
-        -e|--encryption)
-            check_prerequisites
-            verify_cluster
-            detect_control_plane
-            configure_encryption_at_rest
-            exit 0
-            ;;
-        --verify-encryption)
-            check_prerequisites
-            verify_cluster
-            detect_control_plane
-            verify_etcd_encryption
-            exit 0
-            ;;
-        -k|--cronjob)
-            check_prerequisites
-            verify_cluster
-            create_continuous_compliance
-            exit 0
-            ;;
-        --info)
-            show_cluster_info
-            exit 0
-            ;;
-        "")
-            # Run complete lab
-            ;;
-        *)
-            log_error "Unknown option: $1"
-            show_help
-            exit 1
-            ;;
-    esac
+log_info "Starting kube-bench CIS Kubernetes Benchmark Lab"
+log_info "================================================"
 
-    # Note: Cleanup must be explicitly requested with --cleanup option
+case "${1:-}" in
+    -h|--help)
+        show_help
+        exit 0
+        ;;
+    -c|--cleanup)
+        verify_cluster
+        cleanup
+        exit 0
+        ;;
+    -d|--diagnostics)
+        verify_cluster
+        run_diagnostics
+        exit 0
+        ;;
+    -s|--scan)
+        check_prerequisites
+        verify_cluster
+        run_master_scan
+        run_worker_scan
+        exit 0
+        ;;
+    -v|--verify)
+        check_prerequisites
+        verify_cluster
+        run_master_scan true
+        exit 0
+        ;;
+    -f|--fix)
+        check_prerequisites
+        verify_cluster
+        demonstrate_scheduler_profiling_fix
+        exit 0
+        ;;
+    -e|--encryption)
+        check_prerequisites
+        verify_cluster
+        configure_encryption_at_rest
+        exit 0
+        ;;
+    --verify-encryption)
+        check_prerequisites
+        verify_cluster
+        verify_etcd_encryption
+        exit 0
+        ;;
+    -k|--cronjob)
+        check_prerequisites
+        verify_cluster
+        create_continuous_compliance
+        exit 0
+        ;;
+    --info)
+        show_cluster_info
+        exit 0
+        ;;
+    "")
+        # Run complete lab
+        ;;
+    *)
+        log_error "Unknown option: $1"
+        show_help
+        exit 1
+        ;;
+esac
 
-    # Run complete lab from A to Z
-    log_info "Running complete kube-bench lab automation..."
+# Note: Cleanup must be explicitly requested with --cleanup option
 
-    check_prerequisites
-    verify_cluster
-    detect_control_plane
+# Run complete lab from A to Z
+log_info "Running complete kube-bench lab automation..."
+cleanup
+check_prerequisites
+verify_cluster
 
-    log_info "=== Phase 1: Initial Scanning ==="
-    run_master_scan
-    run_worker_scan
+log_info "=== Phase 1: Initial Scanning ==="
+run_master_scan
+run_worker_scan
 
-    log_info "=== Phase 2: Remediation Practice ==="
-    demonstrate_scheduler_profiling_fix
+log_info "=== Phase 2: Remediation Practice ==="
+demonstrate_scheduler_profiling_fix
 
-    log_info "=== Phase 3: Advanced Configuration ==="
-    configure_encryption_at_rest
+log_info "=== Phase 3: Advanced Configuration ==="
+configure_encryption_at_rest
 
-    log_info "=== Phase 4: Automation Setup ==="
-    create_continuous_compliance
+log_info "=== Phase 4: Automation Setup ==="
+create_continuous_compliance
 
-    log_info "=== Phase 5: Final Diagnostics ==="
-    run_diagnostics
+log_info "=== Phase 5: Final Diagnostics ==="
+run_diagnostics
 
-    log_success "================================================"
-    log_success "Kube-bench CIS Kubernetes Benchmark Lab completed!"
-    log_success "================================================"
-    log_info "Key achievements:"
-    log_info "✓ Connected to existing Kubernetes cluster"
-    log_info "✓ Ran CIS benchmark scans on master and worker nodes"
-    log_info "✓ Demonstrated scheduler profiling remediation (1.4.1)"
-    log_info "✓ Configured encryption at rest (1.2.27 & 1.2.28)"
-    log_info "✓ Set up continuous compliance monitoring"
-    log_info ""
-    log_info "Lab components created:"
-    log_info "- Namespace: $NAMESPACE"
-    log_info "- Jobs: kube-bench-master, kube-bench-worker (if applicable)"
-    log_info "- CronJob: kube-bench-cronjob (weekly scans)"
-    log_info ""
-    log_info "Next steps:"
-    log_info "- Review scan results and apply additional remediations"
-    log_info "- Integrate with monitoring and alerting systems"
-    log_info "- Consider admission controllers to prevent misconfigurations"
-    log_info ""
-    log_info "To clean up resources: $0 --cleanup"
-}
-
-# Check if script is run directly
-if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
-    main "$@"
-fi
+log_success "================================================"
+log_success "Kube-bench CIS Kubernetes Benchmark Lab completed!"
+log_success "================================================"
+log_info "Key achievements:"
+log_info "✓ Connected to existing Kubernetes cluster"
+log_info "✓ Ran CIS benchmark scans on master and worker nodes"
+log_info "✓ Demonstrated scheduler profiling remediation (1.4.1)"
+log_info "✓ Configured encryption at rest (1.2.27 & 1.2.28)"
+log_info "✓ Set up continuous compliance monitoring"
+log_info ""
+log_info "Lab components created:"
+log_info "- Namespace: $NAMESPACE"
+log_info "- Jobs: kube-bench-master, kube-bench-worker (if applicable)"
+log_info "- CronJob: kube-bench-cronjob (weekly scans)"
+log_info ""
+log_info "Next steps:"
+log_info "- Review scan results and apply additional remediations"
+log_info "- Integrate with monitoring and alerting systems"
+log_info "- Consider admission controllers to prevent misconfigurations"
+log_info ""
+log_info "To clean up resources: $0 --cleanup"

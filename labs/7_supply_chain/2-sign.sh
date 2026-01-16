@@ -10,6 +10,7 @@ echo
 IMAGE_NAME="nginx:1.19"
 SIGNED_IMAGE="localhost:5000/nginx:1.19-signed"
 REGISTRY_PORT="5000"
+LAB_DIR="$HOME/cosign-lab"
 
 # Color codes for output
 RED='\033[0;31m'
@@ -148,7 +149,7 @@ demo_keyless_signing() {
         docker push ${KEYLESS_IMAGE}
 
         log_info "Signing with keyless method (follow browser prompts)..."
-        cosign sign ${KEYLESS_IMAGE} --yes
+        cosign sign ${KEYLESS_IMAGE}  --identity-token --yes
 
         log_info "Verifying keyless signature..."
         cosign verify ${KEYLESS_IMAGE} --certificate-identity-regexp=".*" --certificate-oidc-issuer-regexp=".*"

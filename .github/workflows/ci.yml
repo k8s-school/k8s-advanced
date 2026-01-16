@@ -79,7 +79,7 @@ jobs:
           go install github.com/k8s-school/ktbx@v1.1.4-rc7
       - name: Run lab (lab creates k8s cluster)
         run: |
-          ./labs/6_security_hardening/seccomp.sh
+          ./labs/6_security_hardening/seccomp.sh -s
   cks-supplychain-trivy:
     name: Run CKS supplychain trivy labs
     runs-on: ubuntu-24.04
@@ -91,7 +91,8 @@ jobs:
           sudo /etc/init.d/apparmor stop
       - name: Run lab
         run: |
-          ./labs/6_security_hardening/supplychain-1-trivy.sh
+          ./labs/7_supplychain/1-trivy.sh
+          ./labs/7_supplychain/2-cosign.sh
   main:
     name: Run k8s advanced labs
     runs-on: ubuntu-22.04

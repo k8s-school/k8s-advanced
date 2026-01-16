@@ -193,7 +193,7 @@ EOF
         -f $LAB_DIR/falco-cks-values.yaml
 
     # Wait for falco to restart
-    kubectl wait --for=condition=Ready pods --all -n "$NAMESPACE" --timeout="${TEST_TIMEOUT}s"
+    kubectl rollout status daemonset/falco -n "$NAMESPACE" --timeout="${TEST_TIMEOUT}s"
 
     log_success "Custom CKS rules applied"
 }
@@ -206,10 +206,6 @@ test_custom_rules() {
     kubectl run test-attack --image=nginx:alpine --overrides='{"apiVersion":"v1","kind":"Pod","spec":{"containers":[{"name":"test-attack","image":"nginx:alpine","command":["sleep","3600"]}]}}' || true
     kubectl wait --for=condition=Ready pod test-attack --timeout=60s
 
-    # Start log monitoring
-    local log_file="/tmp/falco-custom-logs-$$"
-    kubectl logs -l app.kubernetes.io/name=falco -n "$NAMESPACE" -c falco -f | grep -v "k8s_pod_name=<NA>" > "$log_file" 2>&1 &
-    local log_pid=$!
 
     sleep 2
 
@@ -221,9 +217,8 @@ test_custom_rules() {
     kubectl exec test-attack -- passwd || echo "Expected passwd command"
     sleep 3
 
-    # Stop log monitoring
-    kill $log_pid 2>/dev/null || true
-    wait $log_pid 2>/dev/null || true
+    local log_file="$LAB_DIR/falco-custom-$$.log"
+    kubectl logs -l app.kubernetes.io/name=falco -n "$NAMESPACE" -c falco | grep -v "k8s_pod_name=<NA>" > "$log_file"
 
     # Check for custom alerts
     log_info "Checking for custom alerts..."
@@ -234,10 +229,9 @@ test_custom_rules() {
         log_warning "No custom CKS alerts found"
         # Show recent logs for debugging
         log_info "Recent Falco logs:"
-        kubectl logs -l app.kubernetes.io/name=falco -n "$NAMESPACE" -c falco --tail=10
+        cat "$log_file"
+        exit 1
     fi
-
-    rm -f "$log_file"
 }
 
 # Function to test modified shell rule
@@ -267,21 +261,13 @@ EOF
     # Wait for falco to restart
     kubectl rollout status daemonset/falco -n "$NAMESPACE" --timeout="${TEST_TIMEOUT}s"
 
-    # Start log monitoring
-    local log_file="$LAB_DIR/falco-shell-logs-$$"
-    kubectl logs -l app.kubernetes.io/name=falco -n "$NAMESPACE" -c falco -f > "$log_file" 2>&1 &
-    local log_pid=$!
-
-    sleep 2
 
     log_info "Testing modified shell rule..."
     # This should trigger the modified shell rule
-    timeout 10 kubectl exec -it test-attack -- sh -c "echo 'test shell access'" || true
-    sleep 3
+    kubectl exec -it test-attack -- sh -c "echo 'test shell access'"
 
-    # Stop log monitoring
-    kill $log_pid 2>/dev/null || true
-    wait $log_pid 2>/dev/null || true
+    local log_file="$LAB_DIR/falco-shell-$$.log"
+    kubectl logs -l app.kubernetes.io/name=falco -n "$NAMESPACE" -c falco | grep -v "k8s_pod_name=<NA>" > "$log_file"
 
     # Check for modified shell alerts
     log_info "Checking for modified shell alerts..."
@@ -290,6 +276,7 @@ EOF
         grep "CKS_UPDATE.*Shell detected" "$log_file" | tail -1
     else
         log_warning "No modified shell rule alerts found"
+        exit 1
     fi
 
     rm -f "$log_file"
@@ -319,7 +306,7 @@ run_diagnostics() {
         kubectl exec "$falco_pod" -n "$NAMESPACE" -c falco -- ls -la /etc/falco/*.yaml /etc/falco/rules.d/*.yaml 2>/dev/null || echo "No additional rules found"
 
         # Validate rules (check if custom file exists first)
-        kubectl exec "$falco_pod" -n "$NAMESPACE" -c falco -- bash -c '
+        kubectl exec "$falco_pod" -n "$NAMESPACE" -c falco -- sh -c '
         if [ -f /etc/falco/falco_rules.local.yaml ]; then
           falco --validate /etc/falco/falco_rules.local.yaml
         else
