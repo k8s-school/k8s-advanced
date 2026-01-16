@@ -3,7 +3,7 @@
 # Falco Lab Automation Script
 # This script automates the Falco runtime security lab
 
-set -euo pipefail
+set -euxo pipefail
 
 # Colors for output
 RED='\033[0;31m'
@@ -19,9 +19,10 @@ log_warning() { echo -e "${YELLOW}[WARNING]${NC} $1"; }
 log_error() { echo -e "${RED}[ERROR]${NC} $1"; }
 
 # Configuration
-CLUSTER_NAME="${CLUSTER_NAME:-falco}"
 NAMESPACE="falco"
 TEST_TIMEOUT=300
+
+LAB_DIR=$HOME/falco-lab
 
 # Function to check prerequisites
 check_prerequisites() {
@@ -40,6 +41,8 @@ check_prerequisites() {
         exit 1
     fi
 
+    mkdir -p "$LAB_DIR"
+
     log_success "All prerequisites are available"
 }
 
@@ -49,7 +52,7 @@ verify_cluster() {
 
     if ! kubectl cluster-info &> /dev/null; then
         log_error "Cannot connect to Kubernetes cluster"
-        log_info "Please ensure a cluster exists. Create one with: ktbx create -name ${CLUSTER_NAME}"
+        log_info "Please ensure a cluster exists. Create one with: ktbx create"
         exit 1
     fi
 
@@ -155,7 +158,7 @@ test_default_rules() {
 create_custom_rules() {
     log_info "Creating custom CKS rules..."
 
-    cat > falco-cks-values.yaml << 'EOF'
+    cat > $LAB_DIR/falco-cks-values.yaml << 'EOF'
 # Configuration for Falco CKS Lab
 customRules:
   cks_rules.yaml: |-
@@ -187,7 +190,7 @@ EOF
         --set tty=true \
         --set falcosidekick.enabled=true \
         --set falcosidekick.webui.enabled=true \
-        -f falco-cks-values.yaml
+        -f $LAB_DIR/falco-cks-values.yaml
 
     # Wait for falco to restart
     kubectl wait --for=condition=Ready pods --all -n "$NAMESPACE" --timeout="${TEST_TIMEOUT}s"
@@ -242,7 +245,7 @@ test_modified_shell_rule() {
     log_info "Testing modified shell rule..."
 
     # Add modified shell rule to existing config
-    cat >> falco-cks-values.yaml << 'EOF'
+    cat >> $LAB_DIR/falco-cks-values.yaml << 'EOF'
     - rule: Terminal shell in container
       desc: A shell was spawned in a container with an attached terminal
       condition: >
@@ -259,13 +262,13 @@ EOF
         --set tty=true \
         --set falcosidekick.enabled=true \
         --set falcosidekick.webui.enabled=true \
-        -f falco-cks-values.yaml
+        -f $LAB_DIR/falco-cks-values.yaml
 
     # Wait for falco to restart
-    kubectl wait --for=condition=Ready pods --all -n "$NAMESPACE" --timeout="${TEST_TIMEOUT}s"
+    kubectl rollout status daemonset/falco -n "$NAMESPACE" --timeout="${TEST_TIMEOUT}s"
 
     # Start log monitoring
-    local log_file="/tmp/falco-shell-logs-$$"
+    local log_file="$LAB_DIR/falco-shell-logs-$$"
     kubectl logs -l app.kubernetes.io/name=falco -n "$NAMESPACE" -c falco -f > "$log_file" 2>&1 &
     local log_pid=$!
 
@@ -334,9 +337,11 @@ run_diagnostics() {
 cleanup() {
     log_info "Cleaning up test resources..."
 
+    helm uninstall falco -n "$NAMESPACE" || true
+    kubectl delete namespace "$NAMESPACE" --ignore-not-found=true
     kubectl delete pod test-attack --ignore-not-found=true
     kubectl delete deployment test-app --ignore-not-found=true
-    rm -f falco-cks-values.yaml
+    rm -rf $LAB_DIR/
 
     log_success "Cleanup completed"
 }
@@ -349,34 +354,20 @@ show_ui_access() {
     echo "Then open: http://localhost:2802"
 }
 
-# Main execution function
-main() {
-    log_info "Starting Falco Lab automation..."
+# Main script execution
+log_info "Starting Falco Lab automation..."
+cleanup
+check_prerequisites
+verify_cluster
+setup_helm_repo
+install_falco
+create_test_workload
+test_default_rules
+create_custom_rules
+test_custom_rules
+test_modified_shell_rule
+run_diagnostics
+show_ui_access
 
-    check_prerequisites
-    verify_cluster
-    setup_helm_repo
-    install_falco
-    create_test_workload
-    test_default_rules
-    create_custom_rules
-    test_custom_rules
-    test_modified_shell_rule
-    run_diagnostics
-    show_ui_access
+log_success "Falco Lab automation completed successfully!"
 
-    log_success "Falco Lab automation completed successfully!"
-
-    # Ask user if they want to cleanup
-    echo -e "\n${YELLOW}Do you want to cleanup test resources? (y/n):${NC}"
-    read -r cleanup_choice
-    if [[ "$cleanup_choice" =~ ^[Yy]$ ]]; then
-        cleanup
-    fi
-}
-
-# Trap to ensure cleanup on script exit
-trap 'log_warning "Script interrupted, cleaning up..."; cleanup; exit 1' INT TERM
-
-# Run main function
-main "$@"
