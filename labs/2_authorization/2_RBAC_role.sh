@@ -19,8 +19,8 @@ kubectl create ns bar
 kubectl label ns foo bar "RBAC=role"
 
 ink "Create a deployment and its related service in ns 'foo'"
-# for example use image gcr.io/kuar-demo/kuard-amd64:green
-kubectl create deployment kuard --image=gcr.io/kuar-demo/kuard-amd64:green -n foo
+# for example use image k8sschool/kuard-amd64:1
+kubectl create deployment kuard --image=k8sschool/kuard-amd64:1 -n foo
 kubectl expose deployment kuard -n foo --type=NodePort --port=8080 --name=kuard-service
 
 ink "Create pod using image 'k8sschool/kubectl-proxy', and named 'shell' in ns 'bar'"
