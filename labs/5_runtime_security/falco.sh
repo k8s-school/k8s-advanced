@@ -91,27 +91,9 @@ install_falco() {
     fi
 
     log_info "Waiting for Falco pods to be ready..."
-    kubectl wait --for=condition=Ready pods --all -n "$NAMESPACE" --timeout="${TEST_TIMEOUT}s"
+    kubectl rollout status daemonset/falco -n "$NAMESPACE" --timeout="${TEST_TIMEOUT}s"
 
     log_success "Falco installation completed"
-}
-
-# Function to verify Falco installation
-verify_falco() {
-    log_info "Verifying Falco installation..."
-
-    # Check pods are running
-    local falco_pods=$(kubectl get pods -n "$NAMESPACE" --no-headers | wc -l)
-    if [ "$falco_pods" -eq 0 ]; then
-        log_error "No Falco pods found"
-        return 1
-    fi
-
-    # Check logs
-    log_info "Checking Falco logs..."
-    kubectl logs -l app.kubernetes.io/name=falco -n "$NAMESPACE" -c falco --tail=5 | head -n 3
-
-    log_success "Falco is running correctly"
 }
 
 # Function to create test workload
@@ -375,7 +357,6 @@ main() {
     verify_cluster
     setup_helm_repo
     install_falco
-    verify_falco
     create_test_workload
     test_default_rules
     create_custom_rules
