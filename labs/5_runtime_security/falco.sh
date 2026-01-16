@@ -265,6 +265,7 @@ EOF
     log_info "Testing modified shell rule..."
     # This should trigger the modified shell rule
     kubectl exec -it test-attack -- sh -c "echo 'test shell access'"
+    sleep 5
 
     local log_file="$LAB_DIR/falco-shell-$$.log"
     kubectl logs -l app.kubernetes.io/name=falco -n "$NAMESPACE" -c falco | grep -v "k8s_pod_name=<NA>" > "$log_file"
