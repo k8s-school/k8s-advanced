@@ -3,7 +3,7 @@
 # Kube-bench CIS Kubernetes Benchmark Lab Automation
 # This script automates the kube-bench lab exercises on an existing Kubernetes cluster
 
-set -euo pipefail
+set -euxo pipefail
 
 # Colors for output
 RED='\033[0;31m'
@@ -93,10 +93,6 @@ run_master_scan() {
         log_info "Running verification scan on master node..."
         job_name="kube-bench-master-verification"
         job_file="/tmp/kube-bench-master-verification.yaml"
-
-        # Clean up any existing verification job before creating a new one
-        kubectl delete job "$job_name" -n "$NAMESPACE" --ignore-not-found=true
-        sleep 2
     else
         log_info "Running kube-bench scan on master node..."
     fi
@@ -235,16 +231,7 @@ EOF
     if [[ "$verification_mode" != "true" ]]; then
         timeout="${TEST_TIMEOUT}s"
     fi
-    if ! kubectl wait --for=condition=complete job/$job_name -n "$NAMESPACE" --timeout="$timeout"; then
-        log_error "Job $job_name did not complete within timeout"
-
-        # Keep verification job for inspection even on timeout
-        if [[ "$verification_mode" == "true" ]]; then
-            log_info "Verification job '$job_name' preserved for inspection despite timeout"
-        fi
-
-        return 1
-    fi
+    kubectl wait --for=condition=complete job/$job_name -n "$NAMESPACE" --timeout="$timeout"
 
     # Get pod name and show results
     local pod_name
@@ -274,9 +261,6 @@ EOF
             else
                 log_info "Check 1.4.1 not found in verification scan"
             fi
-
-            # Keep verification job for inspection
-            log_info "Verification job '$job_name' completed and preserved for inspection"
         else
             log_info "Master scan completed. Showing results:"
             echo "======================================"
@@ -302,12 +286,6 @@ EOF
         fi
     else
         log_error "Could not find kube-bench master pod"
-
-        # Keep verification job for inspection even on failure
-        if [[ "$verification_mode" == "true" ]]; then
-            log_info "Verification job '$job_name' preserved for inspection despite failure"
-        fi
-
         return 1
     fi
 }
@@ -391,7 +369,7 @@ EOF
 
     kubectl apply -f /tmp/kube-bench-worker.yaml
 
-    log_info "Waiting for worker scan to complete..."
+    log_info "Waiting for worker scan  a complete..."
 
     # Wait for job completion with longer timeout
     if kubectl wait --for=condition=complete job/kube-bench-worker -n "$NAMESPACE" --timeout="120s" 2>/dev/null; then
@@ -420,29 +398,6 @@ EOF
     fi
 }
 
-# Function to check scheduler profiling status
-check_scheduler_profiling() {
-    log_info "Checking scheduler profiling status..."
-
-    # Get scheduler pod name
-    local scheduler_pod=$(kubectl get pod -n kube-system -l component=kube-scheduler -o jsonpath='{.items[0].metadata.name}')
-
-    if [ -n "$scheduler_pod" ]; then
-        log_info "Scheduler pod: $scheduler_pod"
-
-        # Check profiling help
-        log_info "Checking scheduler --profiling help:"
-        kubectl exec -n kube-system $scheduler_pod -- kube-scheduler --help 2>/dev/null | grep profiling || echo "No profiling help found"
-
-        # Check current configuration
-        local current_profiling
-        current_profiling=$(kubectl get pod -n kube-system -l component=kube-scheduler -o yaml | grep -o "profiling=false" || echo "not set")
-        log_info "Current profiling setting: $current_profiling"
-    else
-        log_error "Scheduler pod not found"
-    fi
-}
-
 # Function to demonstrate scheduler profiling fix
 demonstrate_scheduler_profiling_fix() {
     log_info "Demonstrating scheduler profiling remediation (check 1.4.1)..."
@@ -451,9 +406,6 @@ demonstrate_scheduler_profiling_fix() {
         log_warning "Profiling fix requires direct control plane access"
         return 0
     fi
-
-    # Check current profiling status first
-    check_scheduler_profiling
 
     # Check current profiling status
     log_info "Checking current scheduler profiling status..."
@@ -481,11 +433,12 @@ demonstrate_scheduler_profiling_fix() {
 
     # Wait for scheduler to restart
     log_info "Waiting for scheduler to restart..."
-    sleep 10
+    while ! kubectl get pod -n kube-system -l component=kube-scheduler -o jsonpath="{.items[0].metadata.name}" >/dev/null 2>&1; do
+        echo -n "."
+        sleep 2
+    done
     kubectl wait --for=condition=Ready pod -l component=kube-scheduler -n kube-system --timeout=60s
 
-    # Wait a bit more for the change to propagate
-    sleep 5
 
     # Verify the change
     local new_profiling
@@ -500,8 +453,7 @@ demonstrate_scheduler_profiling_fix() {
         sleep 5
         run_master_scan true
     else
-        log_error "Failed to disable scheduler profiling"
-        # Restore backup
+        log_error "Failed to disable scheduler profiling, restoring backup"
         docker exec "$CONTROL_PLANE_CONTAINER" cp /tmp/kube-scheduler.yaml.backup /etc/kubernetes/manifests/kube-scheduler.yaml
         return 1
     fi
@@ -542,10 +494,10 @@ EOF"
 
     # Step 3: Create test secrets to demonstrate current state
     log_info "Step 3: Create test secrets to demonstrate current encryption state"
-    kubectl create secret generic security-test-1 --from-literal=username=admin || true
-    kubectl create secret generic security-test-2 --from-literal=password=secret123 || true
+    kubectl create secret generic test-encryption-demo-1 --from-literal=data="plaintext-data-1" || true
+    kubectl create secret generic test-encryption-demo-2 --from-literal=data="plaintext-data-2" || true
     sleep 2
-    echo "✓ Test secrets created (security-test-1, security-test-2)"
+    echo "✓ Test secrets created"
 
     # Step 4: Check current encryption status in etcd BEFORE encryption
     log_info "Step 4: Checking current encryption status in etcd (BEFORE encryption)"
@@ -557,20 +509,19 @@ EOF"
     echo "🔍 Reading secrets directly from etcd (should show PLAINTEXT):"
     echo ""
     echo "Command used to read from etcd:"
-    echo "kubectl exec \$ETCD_POD -n kube-system -- etcdctl get /registry/secrets/default/SECRET_NAME --endpoints=https://127.0.0.1:2379 --cacert=/etc/kubernetes/pki/etcd/ca.crt --cert=/etc/kubernetes/pki/etcd/peer.crt --key=/etc/kubernetes/pki/etcd/peer.key"
+    echo "kubectl exec etcd-cks-control-plane -n kube-system -- etcdctl get /registry/secrets/default/SECRET_NAME --endpoints=https://127.0.0.1:2379 --cacert=/etc/kubernetes/pki/etcd/ca.crt --cert=/etc/kubernetes/pki/etcd/peer.crt --key=/etc/kubernetes/pki/etcd/peer.key"
     echo ""
 
     # Use temporary files to avoid null byte warnings with binary data
     local temp1="/tmp/secret1_data.$$" temp2="/tmp/secret2_data.$$"
 
-    local etcd_pod=$(kubectl get pods -n kube-system -l component=etcd -o jsonpath='{.items[0].metadata.name}')
-    kubectl exec $etcd_pod -n kube-system -- etcdctl get /registry/secrets/default/security-test-1 \
+    kubectl exec etcd-cks-control-plane -n kube-system -- etcdctl get /registry/secrets/default/test-encryption-demo-1 \
         --endpoints=https://127.0.0.1:2379 \
         --cacert=/etc/kubernetes/pki/etcd/ca.crt \
         --cert=/etc/kubernetes/pki/etcd/peer.crt \
         --key=/etc/kubernetes/pki/etcd/peer.key 2>/dev/null > "$temp1" || echo "etcd_read_error" > "$temp1"
 
-    kubectl exec $etcd_pod -n kube-system -- etcdctl get /registry/secrets/default/security-test-2 \
+    kubectl exec etcd-cks-control-plane -n kube-system -- etcdctl get /registry/secrets/default/test-encryption-demo-2 \
         --endpoints=https://127.0.0.1:2379 \
         --cacert=/etc/kubernetes/pki/etcd/ca.crt \
         --cert=/etc/kubernetes/pki/etcd/peer.crt \
@@ -586,13 +537,13 @@ EOF"
     echo "..."
     echo ""
 
-    if grep -q "admin" "$temp1" 2>/dev/null; then
+    if grep -q "plaintext-data-1" "$temp1" 2>/dev/null; then
         echo "✅ Secret 1: PLAINTEXT VISIBLE in etcd (as expected - no encryption yet)"
     else
         echo "❓ Secret 1: NOT PLAINTEXT (unexpected or read error)"
     fi
 
-    if grep -q "secret123" "$temp2" 2>/dev/null; then
+    if grep -q "plaintext-data-2" "$temp2" 2>/dev/null; then
         echo "✅ Secret 2: PLAINTEXT VISIBLE in etcd (as expected - no encryption yet)"
     else
         echo "❓ Secret 2: NOT PLAINTEXT (unexpected or read error)"
@@ -730,10 +681,10 @@ EOF_PYTHON'
 
     # Step 7: Create new secrets AFTER encryption is enabled
     log_info "Step 7: Create post-encryption test secrets"
-    kubectl create secret generic post-encryption-test-1 --from-literal=data=sensitive-info-1 || true
-    kubectl create secret generic post-encryption-test-2 --from-literal=data=sensitive-info-2 || true
+    kubectl create secret generic post-encryption-demo-1 --from-literal=data="plaintext-after-encryption-1" || true
+    kubectl create secret generic post-encryption-demo-2 --from-literal=data="plaintext-after-encryption-2" || true
     sleep 3
-    echo "✓ Post-encryption test secrets created (post-encryption-test-1, post-encryption-test-2)"
+    echo "✓ Post-encryption test secrets created"
 
     # Step 8: Verify encryption in etcd AFTER encryption
     log_info "Step 8: Verifying encryption in etcd (AFTER encryption)"
@@ -745,19 +696,19 @@ EOF_PYTHON'
     echo "🔍 Reading same secrets from etcd AFTER encryption (should show ENCRYPTED data):"
     echo ""
     echo "Same command used to read from etcd:"
-    echo "kubectl exec \$ETCD_POD -n kube-system -- etcdctl get /registry/secrets/default/SECRET_NAME ..."
+    echo "kubectl exec etcd-cks-control-plane -n kube-system -- etcdctl get /registry/secrets/default/SECRET_NAME ..."
     echo ""
 
     # Check the ORIGINAL secrets (should now be unencrypted still until re-encrypted)
     local orig_temp1="/tmp/orig_secret1.$$" orig_temp2="/tmp/orig_secret2.$$"
 
-    kubectl exec $etcd_pod -n kube-system -- etcdctl get /registry/secrets/default/security-test-1 \
+    kubectl exec etcd-cks-control-plane -n kube-system -- etcdctl get /registry/secrets/default/test-encryption-demo-1 \
         --endpoints=https://127.0.0.1:2379 \
         --cacert=/etc/kubernetes/pki/etcd/ca.crt \
         --cert=/etc/kubernetes/pki/etcd/peer.crt \
         --key=/etc/kubernetes/pki/etcd/peer.key 2>/dev/null > "$orig_temp1" || echo "etcd_read_error" > "$orig_temp1"
 
-    kubectl exec $etcd_pod -n kube-system -- etcdctl get /registry/secrets/default/security-test-2 \
+    kubectl exec etcd-cks-control-plane -n kube-system -- etcdctl get /registry/secrets/default/test-encryption-demo-2 \
         --endpoints=https://127.0.0.1:2379 \
         --cacert=/etc/kubernetes/pki/etcd/ca.crt \
         --cert=/etc/kubernetes/pki/etcd/peer.crt \
@@ -771,13 +722,13 @@ EOF_PYTHON'
     # Check new secrets created AFTER encryption (should be encrypted)
     local post_temp1="/tmp/post_secret1.$$" post_temp2="/tmp/post_secret2.$$"
 
-    kubectl exec $etcd_pod -n kube-system -- etcdctl get /registry/secrets/default/post-encryption-test-1 \
+    kubectl exec etcd-cks-control-plane -n kube-system -- etcdctl get /registry/secrets/default/post-encryption-demo-1 \
         --endpoints=https://127.0.0.1:2379 \
         --cacert=/etc/kubernetes/pki/etcd/ca.crt \
         --cert=/etc/kubernetes/pki/etcd/peer.crt \
         --key=/etc/kubernetes/pki/etcd/peer.key 2>/dev/null > "$post_temp1" || echo "etcd_read_error" > "$post_temp1"
 
-    kubectl exec $etcd_pod -n kube-system -- etcdctl get /registry/secrets/default/post-encryption-test-2 \
+    kubectl exec etcd-cks-control-plane -n kube-system -- etcdctl get /registry/secrets/default/post-encryption-demo-2 \
         --endpoints=https://127.0.0.1:2379 \
         --cacert=/etc/kubernetes/pki/etcd/ca.crt \
         --cert=/etc/kubernetes/pki/etcd/peer.crt \
@@ -800,13 +751,13 @@ EOF_PYTHON'
         echo "✅ Original Secret 1: NO LONGER PLAINTEXT"
     fi
 
-    if grep -q "sensitive-info-1" "$post_temp1" 2>/dev/null; then
+    if grep -q "plaintext-after-encryption-1" "$post_temp1" 2>/dev/null; then
         echo "❌ NEW Secret 1: PLAINTEXT VISIBLE (encryption FAILED!)"
     else
         echo "✅ NEW Secret 1: ENCRYPTED (plaintext not visible)"
     fi
 
-    if grep -q "sensitive-info-2" "$post_temp2" 2>/dev/null; then
+    if grep -q "plaintext-after-encryption-2" "$post_temp2" 2>/dev/null; then
         echo "❌ NEW Secret 2: PLAINTEXT VISIBLE (encryption FAILED!)"
     else
         echo "✅ NEW Secret 2: ENCRYPTED (plaintext not visible)"
@@ -836,7 +787,7 @@ EOF_PYTHON'
 
     local reenc_temp="/tmp/reenc_secret1.$$"
 
-    kubectl exec $etcd_pod -n kube-system -- etcdctl get /registry/secrets/default/security-test-1 \
+    kubectl exec etcd-cks-control-plane -n kube-system -- etcdctl get /registry/secrets/default/test-encryption-demo-1 \
         --endpoints=https://127.0.0.1:2379 \
         --cacert=/etc/kubernetes/pki/etcd/ca.crt \
         --cert=/etc/kubernetes/pki/etcd/peer.crt \
@@ -847,7 +798,7 @@ EOF_PYTHON'
     echo "..."
     echo ""
 
-    if grep -q "admin" "$reenc_temp" 2>/dev/null; then
+    if grep -q "plaintext-data-1" "$reenc_temp" 2>/dev/null; then
         echo "❌ Re-encryption FAILED - still plaintext visible"
     else
         echo "✅ Re-encryption SUCCESS - original secrets now encrypted"
@@ -860,7 +811,7 @@ EOF_PYTHON'
     echo "=========================================="
 
     # Cleanup test secrets
-    kubectl delete secret security-test-1 security-test-2 post-encryption-test-1 post-encryption-test-2 --ignore-not-found=true >/dev/null 2>&1
+    kubectl delete secret test-encryption-demo-1 test-encryption-demo-2 post-encryption-demo-1 post-encryption-demo-2 --ignore-not-found=true >/dev/null 2>&1
 
     log_success "Encryption at rest implementation and verification completed!"
     echo ""
@@ -911,14 +862,13 @@ verify_etcd_encryption() {
     # Use temporary files to handle binary data
     local verify_temp1="/tmp/verify_secret1.$$" verify_temp2="/tmp/verify_secret2.$$"
 
-    local etcd_pod=$(kubectl get pods -n kube-system -l component=etcd -o jsonpath='{.items[0].metadata.name}')
-    kubectl exec $etcd_pod -n kube-system -- etcdctl get /registry/secrets/default/encryption-test-1 \
+    kubectl exec etcd-${CONTROL_PLANE_CONTAINER} -n kube-system -- etcdctl get /registry/secrets/default/encryption-test-1 \
         --endpoints=https://127.0.0.1:2379 \
         --cacert=/etc/kubernetes/pki/etcd/ca.crt \
         --cert=/etc/kubernetes/pki/etcd/peer.crt \
         --key=/etc/kubernetes/pki/etcd/peer.key 2>/dev/null > "$verify_temp1" || echo "error_accessing_etcd" > "$verify_temp1"
 
-    kubectl exec $etcd_pod -n kube-system -- etcdctl get /registry/secrets/default/encryption-test-2 \
+    kubectl exec etcd-${CONTROL_PLANE_CONTAINER} -n kube-system -- etcdctl get /registry/secrets/default/encryption-test-2 \
         --endpoints=https://127.0.0.1:2379 \
         --cacert=/etc/kubernetes/pki/etcd/ca.crt \
         --cert=/etc/kubernetes/pki/etcd/peer.crt \
@@ -932,7 +882,7 @@ verify_etcd_encryption() {
         echo "Status: Unable to verify encryption"
     else
         # Check if plaintext values are visible in etcd
-            if grep -q "plaintext-value-1" "$verify_temp1" 2>/dev/null; then
+        if grep -q "plaintext-value-1" "$verify_temp1" 2>/dev/null; then
             log_error "Secret encryption-test-1 is stored in PLAINTEXT in etcd"
             echo "Secret encryption-test-1: NOT ENCRYPTED ❌"
         else
@@ -1135,7 +1085,6 @@ OPTIONS:
     -e, --encryption     Only demonstrate encryption at rest
     --verify-encryption  Verify etcd encryption status
     -k, --cronjob        Only create continuous compliance CronJob
-    --check-scheduler    Only check scheduler profiling status
     --info               Show cluster information
 
 EXAMPLES:
@@ -1145,7 +1094,6 @@ EXAMPLES:
     $0 --fix             Demonstrate scheduler profiling remediation
     $0 --encryption      Demonstrate encryption at rest configuration
     $0 --verify-encryption  Verify if etcd encryption is working
-    $0 --check-scheduler Check scheduler profiling status
     $0 --cleanup         Clean up all test resources
     $0 --info            Show cluster information
 
@@ -1210,12 +1158,6 @@ main() {
             check_prerequisites
             verify_cluster
             create_continuous_compliance
-            exit 0
-            ;;
-        --check-scheduler)
-            check_prerequisites
-            verify_cluster
-            check_scheduler_profiling
             exit 0
             ;;
         --info)
