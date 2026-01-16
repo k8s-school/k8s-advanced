@@ -91,8 +91,8 @@ jobs:
           sudo /etc/init.d/apparmor stop
       - name: Run lab
         run: |
-          ./labs/7_supplychain/1-trivy.sh
-          ./labs/7_supplychain/2-cosign.sh
+          ./labs/7_supply_chain/1-trivy.sh
+          ./labs/7_supply_chain/2-cosign.sh
   main:
     name: Run k8s advanced labs
     runs-on: ubuntu-22.04
