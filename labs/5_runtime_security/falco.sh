@@ -309,7 +309,7 @@ run_diagnostics() {
         if [ -f /etc/falco/falco_rules.local.yaml ]; then
           falco --validate /etc/falco/falco_rules.local.yaml
         else
-          log_info "Custom rules file not found, checking default rules"
+          echo "Custom rules file not found, checking default rules"
           falco --validate /etc/falco/falco_rules.yaml
         fi'
 
