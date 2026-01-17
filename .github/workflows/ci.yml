@@ -95,7 +95,7 @@ jobs:
           ./labs/7_supply_chain/1-trivy.sh
       - name: Run Cosign lab
         run: |
-          ./labs/7_supply_chain/2-sign.sh
+          ./labs/7_supply_chain/2-cosign.sh
   main:
     name: Run k8s advanced labs
     runs-on: ubuntu-22.04
