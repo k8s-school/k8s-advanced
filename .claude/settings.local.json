@@ -8,7 +8,10 @@
       "Read(//home/fjammes/src/github.com/k8s-school/k8s-school-labs/content/**)",
       "Bash(chmod:*)",
       "Bash(ktbx create:*)",
-      "Bash(./labs/5_runtime_security/falco.sh:*)"
+      "Bash(./labs/5_runtime_security/falco.sh:*)",
+      "Bash(helm uninstall:*)",
+      "Bash(kubectl delete:*)",
+      "Bash(kubectl delete deployment:*)"
     ],
     "deny": [],
     "ask": []

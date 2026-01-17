@@ -272,9 +272,9 @@ EOF
 
     # Check for modified shell alerts
     log_info "Checking for modified shell alerts..."
-    if grep -q "CKS_UPDATE.*Shell detected" "$log_file" 2>/dev/null; then
+    if grep -q "\[CKS_UPDATE\] Shell detected!" "$log_file" 2>/dev/null; then
         log_success "Modified shell rule alert detected!"
-        grep "CKS_UPDATE.*Shell detected" "$log_file" | tail -1
+        grep  "\[CKS_UPDATE\] Shell detected!" "$log_file" | tail -1
     else
         log_warning "No modified shell rule alerts found"
         exit 1
