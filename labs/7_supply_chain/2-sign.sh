@@ -2,6 +2,40 @@
 
 set -euxo pipefail
 
+# Default options
+ENABLE_KEYLESS_DEMO=false
+
+# Function to show usage
+show_usage() {
+    cat << EOF
+Usage: $0 [OPTIONS]
+
+Options:
+  -k, --keyless    Enable keyless signing demonstration with Sigstore
+  -h, --help       Show this help message
+
+EOF
+}
+
+# Parse command line options
+while [[ $# -gt 0 ]]; do
+    case $1 in
+        -k|--keyless)
+            ENABLE_KEYLESS_DEMO=true
+            shift
+            ;;
+        -h|--help)
+            show_usage
+            exit 0
+            ;;
+        *)
+            echo "Unknown option: $1"
+            show_usage
+            exit 1
+            ;;
+    esac
+done
+
 echo "=== Cosign Container Signing Lab ==="
 echo "This lab demonstrates how to sign container images with cosign and verify signatures"
 echo
@@ -138,12 +172,10 @@ show_signature_info() {
 
 # Demonstrate keyless signing (optional)
 demo_keyless_signing() {
-    log_info "Demonstrating keyless signing with Sigstore..."
-    log_warning "This requires internet connectivity and GitHub/Google authentication"
+    if [[ "$ENABLE_KEYLESS_DEMO" == "true" ]]; then
+        log_info "Demonstrating keyless signing with Sigstore..."
+        log_warning "This requires internet connectivity and GitHub/Google authentication"
 
-    read -p "Do you want to try keyless signing? (y/N): " -n 1 -r
-    echo
-    if [[ $REPLY =~ ^[Yy]$ ]]; then
         KEYLESS_IMAGE="localhost:5000/nginx:1.19-keyless"
         docker tag ${IMAGE_NAME} ${KEYLESS_IMAGE}
         docker push ${KEYLESS_IMAGE}
@@ -155,6 +187,8 @@ demo_keyless_signing() {
         cosign verify ${KEYLESS_IMAGE} --certificate-identity-regexp=".*" --certificate-oidc-issuer-regexp=".*"
 
         log_success "Keyless signing demo completed!"
+    else
+        log_info "Keyless signing demo skipped (use -k/--keyless to enable)"
     fi
 }
 
@@ -184,20 +218,11 @@ demo_verification_failure() {
 cleanup() {
     log_info "Cleaning up..."
 
-    read -p "Remove generated keys? (y/N): " -n 1 -r
-    echo
-    if [[ $REPLY =~ ^[Yy]$ ]]; then
-        rm -f cosign.key cosign.pub
-        log_success "Keys removed"
-    fi
-
-    read -p "Stop local registry? (y/N): " -n 1 -r
-    echo
-    if [[ $REPLY =~ ^[Yy]$ ]]; then
-        docker stop registry 2>/dev/null || true
-        docker rm registry 2>/dev/null || true
-        log_success "Local registry stopped and removed"
-    fi
+    log_info "Keeping generated keys for future use (cosign.key, cosign.pub)"
+    log_info "Local registry will continue running for potential future use"
+    log_info "To manually clean up:"
+    log_info "  - Remove keys: rm -f cosign.key cosign.pub"
+    log_info "  - Stop registry: docker stop registry && docker rm registry"
 }
 
 
