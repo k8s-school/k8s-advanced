@@ -127,7 +127,7 @@ test_default_rules() {
     sleep 2
 
     log_info "1. Testing 'Read sensitive file untrusted' rule..."
-    kubectl exec "$TEST_POD" -- cat /etc/shadow || echo "Expected to fail"
+    kubectl exec "$TEST_POD" -- cat /etc/shadow || log_info "Expected to fail"
     sleep 2
 
     log_info "2. Testing 'Shell in container' rule..."
@@ -135,7 +135,7 @@ test_default_rules() {
     sleep 2
 
     log_info "3. Testing 'Executing binary not part of base image' rule..."
-    kubectl exec "$TEST_POD" -- chmod +s /bin/ls || echo "Expected to fail"
+    kubectl exec "$TEST_POD" -- chmod +s /bin/ls || log_info "Expected to fail"
     sleep 2
 
     # Stop log monitoring
@@ -210,11 +210,11 @@ test_custom_rules() {
     sleep 2
 
     log_info "1. Testing network detection rule..."
-    kubectl exec test-attack -- curl google.com || echo "Expected network call"
+    kubectl exec test-attack -- curl google.com || log_info "Expected network call"
     sleep 3
 
     log_info "2. Testing privilege escalation rule..."
-    kubectl exec test-attack -- passwd || echo "Expected passwd command"
+    kubectl exec test-attack -- passwd || log_info "Expected passwd command"
     sleep 3
 
     local log_file="$LAB_DIR/falco-custom-$$.log"
@@ -287,36 +287,36 @@ EOF
 run_diagnostics() {
     log_info "Running diagnostics..."
 
-    echo "=== Falco Pods Status ==="
+    log_info "=== Falco Pods Status ==="
     kubectl get pods -n "$NAMESPACE"
 
-    echo -e "\n=== Falco ConfigMap ==="
-    kubectl get configmap -n "$NAMESPACE" | grep falco || echo "No Falco ConfigMaps found"
+    log_info "\n=== Falco ConfigMap ==="
+    kubectl get configmap -n "$NAMESPACE" | grep falco || log_info "No Falco ConfigMaps found"
 
-    echo -e "\n=== Recent Falco Events ==="
+    log_info "\n=== Recent Falco Events ==="
     kubectl get events -n "$NAMESPACE" --sort-by='.lastTimestamp' | tail -5
 
-    echo -e "\n=== Falco Service ==="
+    log_info "\n=== Falco Service ==="
     kubectl get svc -n "$NAMESPACE"
 
     # Test rule validation
-    echo -e "\n=== Rule Validation ==="
+    log_info "\n=== Rule Validation ==="
     local falco_pod=$(kubectl get pods -n "$NAMESPACE" -l app.kubernetes.io/name=falco -o jsonpath='{.items[0].metadata.name}')
     if [ -n "$falco_pod" ]; then
-        echo "Loaded rule files:"
-        kubectl exec "$falco_pod" -n "$NAMESPACE" -c falco -- ls -la /etc/falco/*.yaml /etc/falco/rules.d/*.yaml 2>/dev/null || echo "No additional rules found"
+        log_info "Loaded rule files:"
+        kubectl exec "$falco_pod" -n "$NAMESPACE" -c falco -- ls -la /etc/falco/*.yaml /etc/falco/rules.d/*.yaml 2>/dev/null || log_info "No additional rules found"
 
         # Validate rules (check if custom file exists first)
         kubectl exec "$falco_pod" -n "$NAMESPACE" -c falco -- sh -c '
         if [ -f /etc/falco/falco_rules.local.yaml ]; then
           falco --validate /etc/falco/falco_rules.local.yaml
         else
-          echo "Custom rules file not found, checking default rules"
+          log_info "Custom rules file not found, checking default rules"
           falco --validate /etc/falco/falco_rules.yaml
         fi'
 
         # List all compiled rules (uses default config which loads all rule files)
-        echo "All loaded rules:"
+        log_info "All loaded rules:"
         kubectl exec "$falco_pod" -n "$NAMESPACE" -c falco -- falco --list | head -20
     fi
 }
@@ -337,9 +337,9 @@ cleanup() {
 # Function to show Falco UI access instructions
 show_ui_access() {
     log_info "Falco UI access instructions:"
-    echo -e "${YELLOW}To access Falco UI, run:${NC}"
-    echo "kubectl port-forward svc/falco-falcosidekick-ui 2802:2802 -n falco"
-    echo "Then open: http://localhost:2802"
+    log_info "${YELLOW}To access Falco UI, run:${NC}"
+    log_info "kubectl port-forward svc/falco-falcosidekick-ui 2802:2802 -n falco"
+    log_info "Then open: http://localhost:2802"
 }
 
 # Main script execution
