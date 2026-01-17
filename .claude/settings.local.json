@@ -11,7 +11,9 @@
       "Bash(./labs/5_runtime_security/falco.sh:*)",
       "Bash(helm uninstall:*)",
       "Bash(kubectl delete:*)",
-      "Bash(kubectl delete deployment:*)"
+      "Bash(kubectl delete deployment:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)"
     ],
     "deny": [],
     "ask": []
