@@ -6,7 +6,9 @@
       "Bash(kubectl get jobs:*)",
       "Bash(/tmp/update_weights.sh:*)",
       "Read(//home/fjammes/src/github.com/k8s-school/k8s-school-labs/content/**)",
-      "Bash(chmod:*)"
+      "Bash(chmod:*)",
+      "Bash(ktbx create:*)",
+      "Bash(./labs/5_runtime_security/falco.sh:*)"
     ],
     "deny": [],
     "ask": []
