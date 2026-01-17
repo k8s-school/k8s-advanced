@@ -261,7 +261,6 @@ EOF
     # Wait for falco to restart
     kubectl rollout status daemonset/falco -n "$NAMESPACE" --timeout="${TEST_TIMEOUT}s"
 
-
     log_info "Testing modified shell rule..."
     # This should trigger the modified shell rule
     kubectl exec -it test-attack -- sh -c "echo 'test shell access'"
@@ -279,7 +278,6 @@ EOF
         log_warning "No modified shell rule alerts found"
         exit 1
     fi
-
     rm -f "$log_file"
 }
 

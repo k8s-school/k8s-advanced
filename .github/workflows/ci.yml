@@ -89,10 +89,12 @@ jobs:
       - name: Stop apparmor
         run: |
           sudo /etc/init.d/apparmor stop
-      - name: Run lab
+      - name: Run Trivy lab
         run: |
           ./labs/7_supply_chain/1-trivy.sh
-          ./labs/7_supply_chain/2-cosign.sh
+      - name: Run Cosign lab
+        run: |
+          ./labs/7_supply_chain/2-sign.sh
   main:
     name: Run k8s advanced labs
     runs-on: ubuntu-22.04

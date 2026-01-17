@@ -1,6 +1,6 @@
 #!/bin/bash
 
-set -euo pipefail
+set -euxo pipefail
 
 echo "=== Cosign Container Signing Lab ==="
 echo "This lab demonstrates how to sign container images with cosign and verify signatures"
@@ -200,63 +200,6 @@ cleanup() {
     fi
 }
 
-# Main execution
-main() {
-    echo "Starting cosign container signing lab..."
-    echo "========================================"
-
-    # Setup
-    check_cosign
-    start_local_registry
-    generate_keys
-
-    echo
-    echo "========================================"
-    echo "Step 1: Image Preparation and Signing"
-    echo "========================================"
-
-    prepare_image
-    sign_image
-
-    echo
-    echo "========================================"
-    echo "Step 2: Signature Verification"
-    echo "========================================"
-
-    verify_signature
-    show_signature_info
-
-    echo
-    echo "========================================"
-    echo "Step 3: Security Demonstrations"
-    echo "========================================"
-
-    demo_verification_failure
-    demo_keyless_signing
-
-    echo
-    echo "========================================"
-    echo "Lab Summary"
-    echo "========================================"
-
-    log_success "✓ Generated cosign key pair"
-    log_success "✓ Signed container image with cosign"
-    log_success "✓ Verified image signature"
-    log_success "✓ Demonstrated verification failure with wrong key"
-
-    echo
-    echo "Key takeaways:"
-    echo "- cosign provides cryptographic signatures for container images"
-    echo "- Signatures are stored as OCI artifacts alongside the image"
-    echo "- Verification requires the correct public key"
-    echo "- Keyless signing uses Sigstore for identity-based verification"
-    echo "- Always verify signatures before deploying containers in production"
-
-    echo
-    cleanup
-
-    log_success "Cosign lab completed successfully!"
-}
 
 # Handle script interruption
 trap cleanup EXIT
@@ -269,5 +212,59 @@ for tool in docker jq curl; do
     fi
 done
 
-# Run main function
-main "$@"
+echo "Starting cosign container signing lab..."
+echo "========================================"
+
+# Setup
+check_cosign
+start_local_registry
+generate_keys
+
+echo
+echo "========================================"
+echo "Step 1: Image Preparation and Signing"
+echo "========================================"
+
+prepare_image
+sign_image
+
+echo
+echo "========================================"
+echo "Step 2: Signature Verification"
+echo "========================================"
+
+verify_signature
+show_signature_info
+
+echo
+echo "========================================"
+echo "Step 3: Security Demonstrations"
+echo "========================================"
+
+demo_verification_failure
+demo_keyless_signing
+
+echo
+echo "========================================"
+echo "Lab Summary"
+echo "========================================"
+
+log_success "✓ Generated cosign key pair"
+log_success "✓ Signed container image with cosign"
+log_success "✓ Verified image signature"
+log_success "✓ Demonstrated verification failure with wrong key"
+
+echo
+echo "Key takeaways:"
+echo "- cosign provides cryptographic signatures for container images"
+echo "- Signatures are stored as OCI artifacts alongside the image"
+echo "- Verification requires the correct public key"
+echo "- Keyless signing uses Sigstore for identity-based verification"
+echo "- Always verify signatures before deploying containers in production"
+
+echo
+cleanup
+
+log_success "Cosign lab completed successfully!"
+
+
