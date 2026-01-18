@@ -30,7 +30,7 @@ check_prerequisites() {
 
     local missing_tools=()
 
-    for tool in kubectl helm ktbx; do
+    for tool in kubectl helm; do
         if ! command -v "$tool" &> /dev/null; then
             missing_tools+=("$tool")
         fi
