@@ -13,7 +13,14 @@
       "Bash(kubectl delete:*)",
       "Bash(kubectl delete deployment:*)",
       "Bash(git add:*)",
-      "Bash(git commit:*)"
+      "Bash(git commit:*)",
+      "Bash(helm repo add:*)",
+      "Bash(helm repo:*)",
+      "Bash(kubectl rollout status:*)",
+      "Bash(kubectl get pods:*)",
+      "Bash(timeout:*)",
+      "Bash(grep:*)",
+      "Bash(kind get:*)"
     ],
     "deny": [],
     "ask": []
