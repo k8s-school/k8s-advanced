@@ -315,7 +315,7 @@ run_diagnostics() {
 
         # List all compiled rules (uses default config which loads all rule files)
         log_info "All loaded rules:"
-        kubectl exec "$falco_pod" -n "$NAMESPACE" -c falco -- falco --list | head -20
+        timeout 60s kubectl exec "$falco_pod" -n "$NAMESPACE" -c falco -- sh -c "falco --list | head -20" || log_warning "Rule listing timed out - this is normal for large rule sets"
     fi
 }
 
