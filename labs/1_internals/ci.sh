@@ -6,3 +6,4 @@ DIR=$(cd "$(dirname "$0")"; pwd -P)
 
 $DIR/etcdctl-get.sh
 $DIR/etcdctl-backup.sh
+$DIR/apiserver-auditlogs.sh
