@@ -96,6 +96,27 @@ jobs:
       - name: Run Cosign lab
         run: |
           ./labs/7_supply_chain/2-cosign.sh
+  finops:
+    name: Run FinOps HPA/VPA labs
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Stop apparmor
+        run: |
+          sudo /etc/init.d/apparmor stop
+      - uses: actions/setup-go@v3
+        with:
+          go-version: '^1.19.2'
+      - name: Install tooling
+        run: |
+          go install github.com/k8s-school/ktbx@v1.1.4-rc7
+          go install github.com/k8s-school/ink@v0.0.1-rc3
+          ktbx install helm
+      - name: Run lab (install.sh creates the cluster + metrics-server + VPA)
+        run: |
+          ./labs/8_finops/ci.sh
   main:
     name: Run k8s advanced labs
     runs-on: ubuntu-22.04

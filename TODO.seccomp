@@ -1,0 +1,3 @@
+SECCOMP DOES NOT WORK FROM INSIDE TOOLBOX (RULES ARE NOT COPIED!!!) 
+SORTIR DE LA TOOLBOX ET LANCER:
+$HOME/.ktbx/homefs/k8s-advanced/labs/6_security_hardening/seccomp.sh
