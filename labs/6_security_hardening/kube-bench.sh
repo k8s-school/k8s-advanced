@@ -534,12 +534,20 @@ EOF"
     echo "=========================================="
 
     # Step 5: Apply encryption configuration automatically
-    log_info "Step 5: Applying encryption configuration to API server (using Python)"
-    docker exec "$CONTROL_PLANE_CONTAINER" bash -c 'python3 << "EOF_PYTHON"
+    log_info "Step 5: Applying encryption configuration to API server (Python runs on the host: the kind node image has no python3)"
+    # Pull the manifest out of the node, transform it on the host (which has
+    # python3), then copy it back. The kubelet picks up the change and restarts
+    # the API server, exactly as an in-place edit would.
+    APISERVER_WORK="$LAB_DIR/kube-apiserver.work.yaml"
+    docker exec "$CONTROL_PLANE_CONTAINER" cat /etc/kubernetes/manifests/kube-apiserver.yaml > "$APISERVER_WORK"
+    python3 - "$APISERVER_WORK" << "EOF_PYTHON"
 import re
+import sys
+
+manifest = sys.argv[1]
 
 # Read the current kube-apiserver.yaml
-with open("/etc/kubernetes/manifests/kube-apiserver.yaml", "r") as f:
+with open(manifest, "r") as f:
     content = f.read()
 
 # Step 1: Add encryption provider config argument
@@ -616,7 +624,7 @@ if has_command and has_mount and has_volume:
     print("✓ Configuration validation successful")
 
     # Write the modified content
-    with open("/etc/kubernetes/manifests/kube-apiserver.yaml", "w") as f:
+    with open(manifest, "w") as f:
         f.write(content)
     print("✓ API server configuration updated successfully")
 else:
@@ -626,7 +634,8 @@ else:
     print(f"  Volume: {has_volume}")
     exit(1)
 
-EOF_PYTHON'
+EOF_PYTHON
+    docker cp "$APISERVER_WORK" "$CONTROL_PLANE_CONTAINER:/etc/kubernetes/manifests/kube-apiserver.yaml"
 
     # Step 6: Wait for API server restart
     log_info "Step 6: Waiting for API server to restart with encryption..."
