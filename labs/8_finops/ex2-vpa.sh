@@ -104,6 +104,18 @@ SERVER_MINOR=$(kubectl get --raw /version | grep -oE '"minor": *"[0-9]+' | grep 
 if [ "${SERVER_MINOR:-0}" -ge 33 ]; then
     ink -b "Cluster >= 1.33: demonstrating in-place resize (no pod recreation)."
 
+    # The "Recreate" step above already right-sized the pods, so there is nothing
+    # left to resize. Reset them to their 50m baseline so the in-place resize is
+    # observable: set the VPA to Off (admission webhook stops injecting the
+    # recommendation), then delete the pods so the Deployment recreates them at
+    # the manifest's 50m.
+    kubectl patch vpa hamster-vpa --type merge -p '{"spec":{"updatePolicy":{"updateMode":"Off"}}}'
+    kubectl delete pod -l app=hamster
+    kubectl rollout status deployment/hamster --timeout=120s
+    ink "Requests reverted to baseline (expect 50m):"
+    kubectl get pods -l app=hamster -o custom-columns=\
+'NAME:.metadata.name,CPU_REQ:.spec.containers[0].resources.requests.cpu,MEM_REQ:.spec.containers[0].resources.requests.memory'
+
     # Record current pod names + start times to prove they are NOT recreated
     BEFORE=$(kubectl get pods -l app=hamster \
         -o jsonpath='{range .items[*]}{.metadata.name}{" started="}{.status.startTime}{"\n"}{end}')
