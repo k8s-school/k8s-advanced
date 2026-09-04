@@ -89,8 +89,12 @@ EOF
 
 # Helm
 #
-HELM_VERSION=3.16.12
-wget -O /tmp/helm.tgz https://get.helm.sh/helm-v${HELM_VERSION}-linux-amd64.tar.gz
+# 3.16.12 never existed upstream (get.helm.sh answers 404, and so does
+# 3.16.11): the pin was wrong, and it aborted prereq.sh under `set -e` before
+# anything else could run. curl -f fails on an HTTP error instead of leaving a
+# 404 page in /tmp/helm.tgz for tar to choke on, so the next bad pin says so.
+HELM_VERSION=3.19.0
+curl -fL --retry 3 -o /tmp/helm.tgz https://get.helm.sh/helm-v${HELM_VERSION}-linux-amd64.tar.gz
 cd /tmp
 tar zxvf /tmp/helm.tgz
 rm /tmp/helm.tgz

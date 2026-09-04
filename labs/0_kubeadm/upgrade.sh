@@ -10,7 +10,7 @@ DIR=$(cd "$(dirname "$0")"; pwd -P)
 
 echo "Copy scripts to all nodes"
 echo "-------------------------"
-parallel --tag -- $SCP --recurse "$DIR/resource" {}:/tmp ::: "$MASTER" $NODES
+parallel --tag -- $SCP -r "$DIR/resource" {}:/tmp ::: "$MASTER" $NODES
 
 echo "Backup etcd"
 echo "-----------"

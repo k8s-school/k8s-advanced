@@ -14,8 +14,9 @@ sudo apt-get install -y kubeadm="$BUMP_KUBEADM" --allow-downgrades
 sudo apt-mark hold kubeadm
 kubeadm version
 
-# On master node only
-kubectl wait --for=condition=ready node clus0-0
+# On master node only. The node name is the hostname, as resource/init.sh
+# already assumes — it used to be the GCE name clus0-0, hardcoded.
+kubectl wait --for=condition=ready node "$(hostname)"
 sudo kubeadm upgrade plan "$BUMP_K8S"
 sudo kubeadm upgrade apply -y "$BUMP_K8S"
 

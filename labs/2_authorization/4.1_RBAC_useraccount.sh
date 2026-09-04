@@ -17,8 +17,8 @@ KIND_CONTEXT="$KIND_CLUSTER_NAME"
 PV_NODE="kind-worker"
 docker exec -- "$PV_NODE" mkdir -p /data/disk2
 
-# on gce run:
-# PV_NODE="clus0-1"
+# on the kubeadm cluster run:
+# PV_NODE="$USER-2"
 # ssh $PV_NODE -- sudo mkdir -p /data/disk2
 
 ORG="k8s-school"

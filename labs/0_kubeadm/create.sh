@@ -9,7 +9,6 @@ usage() {
     cat << EOD
 Usage: $(basename "$0") [options]
 Available options:
-  -p            Add support for network policies
   -h            This message
 
 Init k8s master
@@ -38,7 +37,7 @@ DIR=$(cd "$(dirname "$0")"; pwd -P)
 echo "Copy scripts to all nodes"
 echo "-------------------------"
 
-parallel --tag -- $SCP --recurse "$DIR/resource" $USER@{}:/tmp ::: "$MASTER" $NODES
+parallel --tag -- $SCP -r "$DIR/resource" $USER@{}:/tmp ::: "$MASTER" $NODES
 
 echo "Install prerequisites"
 echo "---------------------"

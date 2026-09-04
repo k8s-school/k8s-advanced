@@ -1,12 +1,13 @@
-# Set-up platform 
+# Set-up platform
 
 ## Pre-requisite
 
-Get access to 3 Google Cloud nodes
+The two nodes of the kubeadm lab, `student<ID>-1` (master) and `student<ID>-2`
+(worker). See `../0_kubeadm/README.md`.
 
-## Create an up and running k8s cluster with PSP enabled
+## Create an up and running k8s cluster
 
 ```shell
 WORKDIR="../0_kubeadm"
-"$WORKDIR"/create.sh -p
+"$WORKDIR"/create.sh
 ```

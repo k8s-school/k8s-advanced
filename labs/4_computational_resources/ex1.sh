@@ -5,8 +5,8 @@ set -x
 
 NS="compute"
 
-# GCP specific:
-# NODE="clus0-1"
+# On the kubeadm cluster this would be the worker:
+# NODE="$USER-2"
 
 NODE="kind-worker"
 
@@ -64,7 +64,7 @@ spec:
         memory: 20Mi
 EOF
   kubectl apply -f "/tmp/requests-pod-$i.yaml"
-  if [ $i -neq 4 ]
+  if [ "$i" -ne 4 ]
   then
     kubectl wait --for=condition=Ready pods "$POD"
     kubectl describe pod "$POD"

@@ -20,7 +20,7 @@ openssl req -new -key "$CERT_DIR/employee.key" -out "$CERT_DIR/employee.csr" \
 # Get key from dind cluster:
 docker cp kind-control-plane:/etc/kubernetes/pki/ca.crt "$CERT_DIR"
 docker cp kind-control-plane:/etc/kubernetes/pki/ca.key "$CERT_DIR"
-# Or on clus0-0@gcp:
+# Or on the kubeadm master (student<ID>-1):
 # sudo cp /etc/kubernetes/pki/ca.crt $HOME/.certs/ && sudo chown $USER $HOME/.certs/ca.crt
 # sudo cp /etc/kubernetes/pki/ca.key $HOME/.certs/ && sudo chown $USER $HOME/.certs/ca.key
 
