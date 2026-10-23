@@ -12,9 +12,10 @@ set -euxo pipefail
 
 DIR=$(cd "$(dirname "$0")"; pwd -P)
 
-CLUSTER_NAME="kind"
+# One cluster per trainee on a shared server: CLUSTER_NAME=$(whoami) ./install.sh
+CLUSTER_NAME="${CLUSTER_NAME:-kind}"
 METRICS_NS="kube-system"
-AUTOSCALER_DIR="/tmp/autoscaler"
+AUTOSCALER_DIR="/tmp/autoscaler-$(id -un)"
 # vpa-up.sh runs `git switch --detach vertical-pod-autoscaler-${VPA_TAG}`, so the
 # working tree MUST contain that tag. We clone directly at the tag below.
 VPA_TAG="1.7.0"
@@ -23,7 +24,7 @@ VPA_TAG="1.7.0"
 # 1. Create the Kubernetes cluster (skip if it already exists)
 # ---------------------------------------------------------------------------
 if ! kubectl config get-contexts "kind-${CLUSTER_NAME}" >/dev/null 2>&1; then
-    ktbx create --single
+    ktbx create --single --name "$CLUSTER_NAME"
 fi
 kubectl config use-context "kind-${CLUSTER_NAME}"
 
