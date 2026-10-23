@@ -18,7 +18,8 @@ NS="verify-pod-security"
 ink "Confirm Pod Security is enabled v1"
 # API_SERVER_POD=$(kubectl get pods -n openshift-kube-apiserver -l apiserver=true -o jsonpath='{.items[0].metadata.name}')
 # kubectl -n openshift-kube-apiserver exec "$API_SERVER_POD" -t -- kube-apiserver -h | grep "default enabled plugins" | grep "PodSecurity"
-kubectl -n kube-system exec kube-apiserver-kind-control-plane -t -- kube-apiserver -h | grep "default enabled plugins" | grep "PodSecurity"
+APISERVER_POD=$(kubectl -n kube-system get pods -l component=kube-apiserver -o jsonpath='{.items[0].metadata.name}')
+kubectl -n kube-system exec "$APISERVER_POD" -t -- kube-apiserver -h | grep "default enabled plugins" | grep "PodSecurity"
 
 
 ink "Confirm Pod Security is enabled v2"
