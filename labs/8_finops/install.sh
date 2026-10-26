@@ -12,7 +12,7 @@ set -euxo pipefail
 
 DIR=$(cd "$(dirname "$0")"; pwd -P)
 
-# One cluster per trainee on a shared server: CLUSTER_NAME=$(whoami) ./install.sh
+# Cluster-wide setup: run it once per cluster (the trainer, on a shared cluster)
 CLUSTER_NAME="${CLUSTER_NAME:-kind}"
 METRICS_NS="kube-system"
 AUTOSCALER_DIR="/tmp/autoscaler-$(id -un)"
@@ -65,9 +65,13 @@ if ! git -C "$AUTOSCALER_DIR" rev-parse "vertical-pod-autoscaler-${VPA_TAG}" >/d
 fi
 
 cd "$AUTOSCALER_DIR/vertical-pod-autoscaler"
-# Clean any previous VPA install to keep vpa-up.sh idempotent
-./hack/vpa-down.sh || true
-./hack/vpa-up.sh
+# On a shared cluster, never reinstall a running VPA: vpa-down.sh deletes the
+# VPA CRDs, hence the VerticalPodAutoscalers of every trainee
+if kubectl get deployment -n kube-system vpa-recommender >/dev/null 2>&1; then
+    ink -y "VPA already installed, skipping"
+else
+    ./hack/vpa-up.sh
+fi
 
 kubectl wait --for=condition=Available -n kube-system --timeout=180s \
     deployment/vpa-recommender deployment/vpa-updater deployment/vpa-admission-controller
