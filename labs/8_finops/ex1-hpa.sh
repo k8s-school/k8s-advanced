@@ -21,9 +21,9 @@ kubectl rollout status deployment/php-apache --timeout=120s
 
 # ---------------------------------------------------------------------------
 # 2. Create the HorizontalPodAutoscaler
-#    Target: 50% average CPU, between 1 and 10 replicas.
+#    Target: 50% average CPU, between 1 and 3 replicas (shared cluster).
 # ---------------------------------------------------------------------------
-kubectl autoscale deployment php-apache --cpu-percent=50 --min=1 --max=10
+kubectl autoscale deployment php-apache --cpu-percent=50 --min=1 --max=3
 
 # Wait for the HPA to read the first metrics (TARGETS must leave <unknown>).
 # kubectl autoscale creates an autoscaling/v2 HPA, so the utilization lives in
