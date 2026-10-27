@@ -21,7 +21,8 @@ BAR_NAMESPACE="bar-${ID}"
 PROXY_POD="curl-custom-sa"
 
 ink "Cleanup"
-kubectl delete namespace -l lab=rbac
+# Only the namespaces of this account: the cluster may be shared
+kubectl delete namespace "$FOO_NAMESPACE" "$BAR_NAMESPACE" --ignore-not-found
 
 ink "Creating namespaces..."
 kubectl create namespace "$FOO_NAMESPACE"
