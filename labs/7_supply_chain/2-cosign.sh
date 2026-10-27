@@ -42,7 +42,8 @@ echo
 
 # Variables
 IMAGE_NAME="nginx:1.19"
-SIGNED_IMAGE="localhost:5000/nginx:1.19-signed"
+# One repository per account: the registry is shared by all the accounts of the training server
+SIGNED_IMAGE="localhost:5000/$(id -un)/nginx:1.19-signed"
 REGISTRY_PORT="5000"
 LAB_DIR="$HOME/cosign-lab"
 
@@ -83,7 +84,7 @@ check_cosign() {
 
         log_success "cosign installed successfully"
     else
-        log_success "cosign is already installed: $(cosign version --short)"
+        log_success "cosign is already installed: $(cosign version 2>&1 | grep GitVersion)"
     fi
 }
 
@@ -91,7 +92,8 @@ check_cosign() {
 start_local_registry() {
     log_info "Setting up local container registry..."
 
-    if ! docker ps | grep -q "registry:2"; then
+    # Match the container name: kind-registry (ktbx) also runs the registry:2 image, on another port
+    if ! docker ps --format '{{.Names}}' | grep -qx registry; then
         log_info "Starting local registry on port ${REGISTRY_PORT}..."
         docker run -d -p ${REGISTRY_PORT}:5000 --name registry registry:2
         sleep 3
@@ -176,7 +178,7 @@ demo_keyless_signing() {
         log_info "Demonstrating keyless signing with Sigstore..."
         log_warning "This requires internet connectivity and GitHub/Google authentication"
 
-        KEYLESS_IMAGE="localhost:5000/nginx:1.19-keyless"
+        KEYLESS_IMAGE="localhost:5000/$(id -un)/nginx:1.19-keyless"
         docker tag ${IMAGE_NAME} ${KEYLESS_IMAGE}
         docker push ${KEYLESS_IMAGE}
 
