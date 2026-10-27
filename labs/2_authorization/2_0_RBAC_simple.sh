@@ -34,9 +34,6 @@ ink "Deploying kubectl-proxy pod in $FOO_NAMESPACE..."
 # Download the kubectl-proxy pod definition
 curl -s -o kubectl-proxy.yaml https://raw.githubusercontent.com/k8s-school/k8s-advanced/master/labs/2_authorization/kubectl-proxy.yaml
 
-# Replace the service account name in the pod definition
-sed -i "s/serviceAccountName: foo/serviceAccountName: default/" kubectl-proxy.yaml
-
 kubectl apply -f kubectl-proxy.yaml -n "$FOO_NAMESPACE"
 
 ink "Creating services in $FOO_NAMESPACE and $BAR_NAMESPACE..."
