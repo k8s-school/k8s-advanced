@@ -17,9 +17,10 @@ openssl genrsa -out "$CERT_DIR/employee.key" 2048
 openssl req -new -key "$CERT_DIR/employee.key" -out "$CERT_DIR/employee.csr" \
     -subj "/CN=employee/O=$ORG"
 
-# Get key from dind cluster:
-docker cp kind-control-plane:/etc/kubernetes/pki/ca.crt "$CERT_DIR"
-docker cp kind-control-plane:/etc/kubernetes/pki/ca.key "$CERT_DIR"
+# Get key from the kind cluster (CLUSTER_NAME is set on the training server, else kind)
+CONTROL_PLANE="${CLUSTER_NAME:-kind}-control-plane"
+docker cp "$CONTROL_PLANE":/etc/kubernetes/pki/ca.crt "$CERT_DIR"
+docker cp "$CONTROL_PLANE":/etc/kubernetes/pki/ca.key "$CERT_DIR"
 # Or on the kubeadm master (student<ID>-1):
 # sudo cp /etc/kubernetes/pki/ca.crt $HOME/.certs/ && sudo chown $USER $HOME/.certs/ca.crt
 # sudo cp /etc/kubernetes/pki/ca.key $HOME/.certs/ && sudo chown $USER $HOME/.certs/ca.key

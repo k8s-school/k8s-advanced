@@ -7,6 +7,8 @@ set -x
 # see "kubernetes in action" p362
 
 DIR=$(cd "$(dirname "$0")"; pwd -P)
+# Per-account directory: /tmp is shared by all the accounts of the training server
+TMP_DIR=$(mktemp -d)
 
 . $DIR/../conf.version.sh
 
@@ -18,7 +20,7 @@ kubectl delete ns -l RBAC=clusterrole
 kubectl delete pv,ns,clusterrole,clusterrolebinding -l RBAC=clusterrole
 
 # Create namespace '$NS' in yaml, with label "RBAC=clusterrole"
-cat <<EOF >/tmp/ns_$NS.yaml
+cat <<EOF >$TMP_DIR/ns_$NS.yaml
 apiVersion: v1
 kind: Namespace 
 metadata:
@@ -26,7 +28,7 @@ metadata:
   labels:
     RBAC: clusterrole
 EOF
-kubectl apply -f "/tmp/ns_$NS.yaml"
+kubectl apply -f "$TMP_DIR/ns_$NS.yaml"
 
 # Use namespace 'baz' in current context
 kubectl config set-context --current --namespace=$NS
@@ -39,8 +41,8 @@ kubectl apply -f "$DIR/manifest/local-storage.yaml"
 # see https://kubernetes.io/docs/concepts/storage/volumes/#local
 # WARN: Directory kube-node-1:/data/disk1, must exist,
 # for next exercice, create also kube-node-1:/data/disk2
-NODE="kind-worker"
-cat <<EOF >/tmp/pv-1.yaml
+NODE="${CLUSTER_NAME:-kind}-worker"
+cat <<EOF >$TMP_DIR/pv-1.yaml
 apiVersion: v1
 kind: PersistentVolume
 metadata:
@@ -66,7 +68,7 @@ spec:
           values:
           - $NODE
 EOF
-kubectl apply -f "/tmp/pv-1.yaml"
+kubectl apply -f "$TMP_DIR/pv-1.yaml"
 
 # Create clusterrole 'pv-reader' which can get and list resource 'persistentvolumes'
 kubectl create clusterrole pv-reader --verb=get,list --resource=persistentvolumes

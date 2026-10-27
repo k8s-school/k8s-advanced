@@ -6,6 +6,8 @@ set -euxo pipefail
 # see "kubernetes in action" p346
 
 DIR=$(cd "$(dirname "$0")"; pwd -P)
+# Per-account directory: /tmp is shared by all the accounts of the training server
+TMP_DIR=$(mktemp -d)
 
 kubectl delete sa,pod -l "RBAC=sa"
 
@@ -16,8 +18,8 @@ kubectl label sa foo "RBAC=sa"
 # Create a pod using this service account
 # use manifest/pod.yaml, and patch it
 kubectl patch -f "$DIR/manifest/pod.yaml" \
-    -p '{"spec":{"serviceAccountName":"foo"}}' --local  -o yaml > /tmp/pod.yaml
-kubectl apply -f "/tmp/pod.yaml"
+    -p '{"spec":{"serviceAccountName":"foo"}}' --local  -o yaml > $TMP_DIR/pod.yaml
+kubectl apply -f "$TMP_DIR/pod.yaml"
 kubectl label pod curl-custom-sa "RBAC=sa"
 
 # Wait for pod to be in running state
@@ -47,8 +49,8 @@ kubectl describe secret "$FOO_TOKEN"
 
 # Recreate pod
 kubectl patch -f "$DIR/manifest/pod.yaml" \
-    -p '{"spec":{"serviceAccountName":"foo"}}' --local  -o yaml > /tmp/pod.yaml
-kubectl apply -f "/tmp/pod.yaml"
+    -p '{"spec":{"serviceAccountName":"foo"}}' --local  -o yaml > $TMP_DIR/pod.yaml
+kubectl apply -f "$TMP_DIR/pod.yaml"
 kubectl label pod curl-custom-sa "RBAC=sa"
 
 # Wait for pod to be in running state

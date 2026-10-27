@@ -8,11 +8,13 @@ NS="compute"
 # On the kubeadm cluster this would be the worker:
 # NODE="$USER-2"
 
-NODE="kind-worker"
+NODE="${CLUSTER_NAME:-kind}-worker"
 
 DIR=$(cd "$(dirname "$0")"; pwd -P)
+# Per-account directory: /tmp is shared by all the accounts of the training server
+TMP_DIR=$(mktemp -d)
 
-KIND_CONTEXT="kind-kind"
+KIND_CONTEXT="kind-${CLUSTER_NAME:-kind}"
 # Switch back to context kubernetes-admin@kubernetes
 kubectl config use-context "$KIND_CONTEXT"
 
@@ -24,9 +26,9 @@ kubectl label ns "$NS" "compute=true"
 
 kubectl config set-context $(kubectl config current-context) --namespace=$NS
 
-KUBIA_DIR="/tmp/kubernetes-in-action"
+KUBIA_DIR="/tmp/kubernetes-in-action-$(id -un)"
 if [ ! -d "$KUBIA_DIR" ]; then
-    git clone https://github.com/k8s-school/kubernetes-in-action.git /tmp/kubernetes-in-action
+    git clone https://github.com/k8s-school/kubernetes-in-action.git /tmp/kubernetes-in-action-$(id -un)
 
 fi
 
@@ -48,7 +50,7 @@ fi
 for i in 2 3 4
 do
 POD="requests-pod-$i"
-cat <<EOF >/tmp/$POD.yaml
+cat <<EOF >$TMP_DIR/$POD.yaml
 apiVersion: v1
 kind: Pod
 metadata:
@@ -63,7 +65,7 @@ spec:
         cpu: 1500m
         memory: 20Mi
 EOF
-  kubectl apply -f "/tmp/requests-pod-$i.yaml"
+  kubectl apply -f "$TMP_DIR/requests-pod-$i.yaml"
   if [ "$i" -ne 4 ]
   then
     kubectl wait --for=condition=Ready pods "$POD"

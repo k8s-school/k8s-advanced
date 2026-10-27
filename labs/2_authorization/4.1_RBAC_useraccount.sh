@@ -9,12 +9,13 @@ set -x
 
 DIR=$(cd "$(dirname "$0")"; pwd -P)
 
-KIND_CLUSTER_NAME="kind-kind"
+# CLUSTER_NAME is set on the training server, else kind
+KIND_CLUSTER_NAME="kind-${CLUSTER_NAME:-kind}"
 KIND_CONTEXT="$KIND_CLUSTER_NAME"
-# WARN: Directory kind-worker:/data/disk2, must exist
+# WARN: Directory <cluster>-worker:/data/disk2, must exist
 
 # on kind run:
-PV_NODE="kind-worker"
+PV_NODE="${CLUSTER_NAME:-kind}-worker"
 docker exec -- "$PV_NODE" mkdir -p /data/disk2
 
 # on the kubeadm cluster run:
@@ -23,7 +24,7 @@ docker exec -- "$PV_NODE" mkdir -p /data/disk2
 
 ORG="k8s-school"
 
-# Use context 'kind-kind' and delete ns,pv with label "RBAC=user"
+# Use the kind context and delete ns,pv with label "RBAC=user"
 kubectl config use-context "$KIND_CONTEXT"
 kubectl delete pv,clusterrolebinding,ns -l "RBAC=user"
 
